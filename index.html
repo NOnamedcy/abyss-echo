@@ -101,6 +101,8 @@
   .floor small { display: block; color: #dbb179; font: 12px var(--mono); letter-spacing: .22em; }
   .floor h2 { margin: 4px 0 2px; font: 700 clamp(19px, 2.2vw, 32px) var(--serif); letter-spacing: .16em; }
   #wave-text { color: #c9c0ae; font-size: 12px; letter-spacing: .14em; }
+  #modifier-list { color: var(--text); margin: 5px auto 0; padding: 3px 7px; border: 1px solid var(--line); background: #101115cc; font-size: 11px; }
+  #arena.mist::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 16vmin #281238a0; }
   #boss-hud { position: absolute; left: 50%; top: 117px; transform: translateX(-50%); width: min(410px, 47vw); text-align: center; }
   #boss-name { color: #ffca9d; font-weight: 700; letter-spacing: .15em; text-shadow: 0 2px 5px #000; }
   #boss-move { display: block; color: #e7bd94; margin-top: 5px; font-size: 11px; letter-spacing: .09em; min-height: 16px; }
@@ -347,6 +349,7 @@
     <small id="floor-number">01 / 20</small>
     <h2 id="zone-name">腐朽地窖</h2>
     <div id="wave-text">第 1 波</div>
+    <div id="modifier-list" aria-label="本层环境词条" hidden></div>
   </header>
   <div id="boss-hud" hidden>
     <div id="boss-name"></div>
@@ -408,6 +411,23 @@ const arcana = {
 const fusionNames = { ember: { frost: '霜火碎裂', thunder: '雷火爆燃' }, frost: { thunder: '电霜' } };
 const fusionName = (a, b) => fusionNames[a]?.[b] ?? fusionNames[b]?.[a];
 const blessingElements = { frost: 'frost', burn: 'ember', chain: 'thunder' };
+const MAX_FLOOR = 20;
+const BOSS_HP_MULT = [3.65, 8.25, 21.5, 46.8];
+const LAYOUTS = {
+  court: { name: '开阔庭院', weight: 26, minFloor: 1, columns: [], crystals: [[-8,6],[8,6]] },
+  pillars: { name: '柱阵', weight: 24, minFloor: 1, columns: [[-8,-6],[0,-6],[8,-6],[-8,6],[0,6],[8,6]], crystals: [] },
+  gallery: { name: '双廊', weight: 20, minFloor: 4, columns: [[-12,-9],[-12,-3],[-12,3],[12,-9],[12,-3],[12,3]], crystals: [[0,-11],[0,11]] },
+  ring: { name: '环形祭坛', weight: 18, minFloor: 6, columns: [[0,-9],[8,-5],[8,5],[0,9],[-8,5],[-8,-5]], crystals: [[0,0]] },
+  fracture: { name: '断层', weight: 12, minFloor: 11, columns: [[-14,-11],[-5,-2],[4,4],[13,11]], crystals: [[-3,9],[6,-8]] }
+};
+const MODIFIERS = {
+  mist: { name: '蚀雾', description: '治疗球效果减少 30%。' },
+  gale: { name: '阴风', description: '玩家和敌人的移速增加 10%。' },
+  storm: { name: '雷暴', description: '每 14 秒，附近出现预警落雷。' },
+  famine: { name: '饥荒', description: '灵魂增加 25%，治疗球掉率减半。' },
+  overload: { name: '过载', description: '敌人伤害增加 12%。' },
+  fortune: { name: '福泽', description: '更容易选到史诗和传说祝福。' }
+};
 const zones = [
   { name: '腐朽地窖', boss: '锈冠典狱长', fog: 0x160f12, stone: '#282326', mortar: '#0e0c10', wall: '#292322', fire: 0xff813a, light: 0xff954e, accent: 0xd08855, sky: 0xd2a5a9, pattern: 'rust' },
   { name: '翡翠墓穴', boss: '翡翠织骸者', fog: 0x091915, stone: '#1a2924', mortar: '#08120f', wall: '#233229', fire: 0x74ff96, light: 0x75f8b2, accent: 0x74cb9b, sky: 0x96dbb2, pattern: 'moss' },
@@ -452,9 +472,34 @@ const enemies = {
   shooter: { name: '悬棺射手', hp: 31, speed: 2.9, radius: .68, color: 0xe88b4d, xp: 5, damage: 11 },
   charger: { name: '裂角冲锋者', hp: 52, speed: 2.75, radius: .86, color: 0xff5034, xp: 7, damage: 16 },
   bomber: { name: '爆裂棘球', hp: 35, speed: 4.05, radius: .66, color: 0xffa53f, xp: 6, damage: 22 },
+  splitter: { name: '胞裂卵', hp: 44, speed: 3.10, radius: .72, damage: 9, xp: 7, color: 0x8be08a, floor: 4, weight: 16, zones: [1,3], body: 'ball', split: 'spawnling' },
+  spawnling: { name: '幼体', hp: 12, speed: 4.20, radius: .42, damage: 6, xp: 2, color: 0xb7f0a8, body: 'ball' },
+  leaper: { name: '霜跃兽', hp: 46, speed: 3.00, radius: .78, damage: 15, xp: 9, color: 0x8ee9ff, floor: 6, weight: 18, zones: [1,3], body: 'gem', action: 'jump', range: 11, cd: 2.8 },
+  hexer: { name: '咒缚者', hp: 34, speed: 2.70, radius: .66, damage: 8, xp: 8, color: 0xc9a0ff, floor: 8, weight: 14, zones: [3], body: 'cone', action: 'hex', range: 12, cd: 3.4, keep: 9 },
+  warden: { name: '石鳞盾卫', hp: 78, speed: 2.20, radius: .92, damage: 14, xp: 10, color: 0xb9b1a2, floor: 10, weight: 14, zones: [0,1], body: 'box', shield: .30 },
+  sniper: { name: '长瞳凝视者', hp: 26, speed: 2.60, radius: .62, damage: 18, xp: 6, color: 0xffe08a, floor: 12, weight: 12, zones: [3], body: 'gem', action: 'beam', range: 26, cd: 4.2, keep: 16, limit: 2 },
+  orbitter: { name: '环刃傀儡', hp: 40, speed: 3.20, radius: .70, damage: 10, xp: 8, color: 0xff9c72, floor: 14, weight: 12, zones: [2,3], body: 'torus', action: 'ring', range: 17, cd: 2.8, keep: 11, shots: 3 },
   boss: { hp: 620, speed: 3.5, radius: 1.47, color: 0xff653d, xp: 36, damage: 19 }
 };
-const bossMoves = ['螺旋弹幕', '追击突进', '环形爆发', '召唤仆从', '跃地震击'];
+const WAVE_TABLE = { stalker: [1,60], shooter: [1,25], charger: [2,20,[0,2]], bomber: [3,18] };
+for (const [id, data] of Object.entries(enemies)) if (data.floor) WAVE_TABLE[id] = [data.floor, data.weight, data.zones];
+const BOSS_MOVES = {
+  spiral: ['螺旋弹幕', .65], dash: ['追击突进', .83], ring: ['环形爆发', .90],
+  summon: ['召唤仆从', .69], leap: ['跃地震击', .59], cage: ['锁链牢笼', 1.4],
+  spike: ['藤蔓穿刺', .80], poison: ['腐毒瘴气', 1.0], bloom: ['孢子绽放', 1.6],
+  eruption: ['熔岩喷发', .90], heat: ['熔岩通道', 1.2], mirror: ['镜像分身', .90],
+  blink: ['虚空背刺', .55], rift: ['虚空裂界', 1.3], fan: ['扇形散射', .82],
+  storm: ['虚空风暴', .95], pull: ['引力拉扯', .90], phase: ['相位冲袭', .70],
+  heal: ['吸收藤蔓', 1.5], ringWave: ['环潮冲击', 1.0], tidecall: ['召唤涨潮', 1.05],
+  zone: ['深潮水洼', .92], lance: ['潮枪贯穿', .85], hammer: ['重锤三连', .55],
+  magnet: ['磁极牵引', .95], curtain: ['帷幕落下', 1.20], encore: ['终幕返场', .98]
+};
+const BOSS_DECKS = [
+  [['spiral','dash','ring','summon','leap'], ['cage']],
+  [['fan','spike','summon','poison','dash'], ['bloom']],
+  [['eruption','dash','ring','summon','leap'], ['heat']],
+  [['mirror','storm','blink','pull','phase'], ['rift']]
+];
 const readStore = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 };
@@ -480,7 +525,9 @@ const geometry = {}, materials = {}, zoneArt = [];
 const dom = Object.fromEntries([...document.querySelectorAll('[id]')].map(el => [el.id, el]));
 const mapCtx = dom.map.getContext('2d');
 const mobList = [], drops = [], effects = [], numberList = [];
+const hazards = [];
 const caps = { enemies: 35, drops: 160, effects: 90, numbers: 36 };
+const numberPool = [];
 
 // 石板、墙砖与光晕全部在本地生成。
 function canvasTexture(w, h, paint) {
@@ -498,6 +545,50 @@ function seeded(seed) {
     return (seed >>> 0) / 4294967296;
   };
 }
+function pickWeighted(entries, rng) {
+  let value = rng() * entries.reduce((sum, [, weight]) => sum + weight, 0);
+  return entries.find(([, weight]) => (value -= weight) < 0)?.[0] ?? entries[0]?.[0];
+}
+function pickLayout(rng, floor) {
+  return pickWeighted(Object.entries(LAYOUTS).filter(([, layout]) => floor >= layout.minFloor)
+    .map(([id, layout]) => [id, layout.weight]), rng);
+}
+function clearOfZones(x, z, radius) {
+  return Math.abs(x) + radius <= WIDTH - 2.2 && Math.abs(z) + radius <= DEPTH - 2.2 &&
+    [[0,3.2,3], [0,-4.7,3.2], [0,-10,3], [0,0,2.6]].every(([cx, cz, r]) => squared(x - cx, z - cz) >= (r + radius) ** 2);
+}
+function rollModifiers(rng, floor) {
+  const count = floor < 4 ? 0 : floor < 10 ? 1 : floor < 17 ? 2 : 3;
+  const pool = Object.keys(MODIFIERS);
+  const drawn = [];
+  while (drawn.length < count && pool.length) {
+    const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+    if (id === 'gale' && drawn.includes('overload') || id === 'overload' && drawn.includes('gale')) continue;
+    drawn.push(id);
+  }
+  return drawn;
+}
+function planFloor(seed, floor) {
+  const rng = seeded((seed ^ (floor * 2003)) >>> 0);
+  const layout = pickLayout(rng, floor);
+  const modifiers = rollModifiers(rng, floor);
+  const obstacles = [];
+  for (const kind of ['columns', 'crystals']) {
+    const r = kind === 'columns' ? .91 : .72;
+    for (const [bx, bz] of LAYOUTS[layout][kind]) {
+      const x = bx + (rng() - .5) * 2.6, z = bz + (rng() - .5) * 2.6;
+      function placeObstacle(cx) {
+        if (clearOfZones(cx, z, r) && obstacles.every(o => squared(o.x - cx, o.z - z) > (o.r + r + .4) ** 2)) {
+          obstacles.push({ x: cx, z, r, kind });
+        }
+      }
+      placeObstacle(x);
+      if (floor >= 10 && rng() < .22) placeObstacle(-x);
+    }
+  }
+  return { layout, modifiers, obstacles };
+}
+function hasModifier(id) { return run.modifiers?.includes(id) ?? false; }
 function stoneTexture(theme, wall, seed) {
   const rnd = seeded(seed);
   const size = wall ? 256 : 512;
@@ -710,7 +801,7 @@ function buildRoom(index, floor, stage = false) {
   flames = [];
   portal = null;
   titleStage = null;
-  const rng = seeded(floor * 2003 + (stage ? 81 : 613));
+  const rng = seeded(stage ? floor * 2003 + 81 : (run.seed ^ floor * 2003) >>> 0);
   const floorMesh = mesh(room, 'plane', art.floor, 0, -.035, 0, WIDTH * 2 + 1, DEPTH * 2 + 1, 1);
   floorMesh.rotation.x = -Math.PI / 2;
   decorateRune(room, 0, 0, 3.6, art.rune);
@@ -750,15 +841,14 @@ function buildRoom(index, floor, stage = false) {
     batchStone(room, art);
     return;
   }
-  const bases = [[-10,-8], [11,-8], [-11,7], [10,8], [-16,-1], [16,1], [-3,-12], [4,12]];
-  for (let i = 0; i < (floor % 5 === 0 ? 4 : 7); i++) {
-    const [bx, bz] = bases[i];
-    const x = bx + (rng() - .5) * 3, z = bz + (rng() - .5) * 3;
-    if (i < 4) makeColumn(room, art, x, z, .95 + rng() * 1.1, .87);
+  for (const obstacle of run.floorPlan.obstacles) {
+    const { x, z, kind } = obstacle;
+    if (kind === 'columns') makeColumn(room, art, x, z, .95 + rng() * 1.1, .87);
     else makeCrystal(room, art, x, z, 1.3, rng);
-    obstacleList.push({ x, z, r: i < 4 ? .91 : .72 });
+    obstacleList.push(obstacle);
   }
-  for (let i = 0; i < 18; i++) {
+  const slabs = 8 + Math.floor(rng() * 7);
+  for (let i = 0; i < slabs; i++) {
     const x = (rng() - .5) * 43, z = (rng() - .5) * 32;
     if (Math.abs(x) < 5 && Math.abs(z) < 5) continue;
     const slab = mesh(room, 'box', art.stone, x, .06, z, .2 + rng() * .6, .12, .22 + rng() * .5);
@@ -914,7 +1004,7 @@ function makeEnemy(kind, elite, zoneIndex) {
   const data = enemies[kind];
   const { shell, bone, eye, ring } = mobPalette(kind === 'boss' ? zones[zoneIndex].fire : data.color, elite);
   const feet = [];
-  let ornament;
+  let ornament, shield;
   ground(root, 'plane', materials.shadow, 0, 0, data.radius * 3.5, .02);
   if (elite) ground(root, 'ring', materials.elite, 0, 0, data.radius * 1.75, .031);
   if (kind === 'stalker') {
@@ -953,12 +1043,23 @@ function makeEnemy(kind, elite, zoneIndex) {
     }
     ornament = mesh(model, 'torus', ring, 0, .7, 0, .73);
     ornament.rotation.x = Math.PI / 2;
-  } else {
+  } else if (kind === 'boss') {
     buildBossModel(model, zoneIndex, shell, bone, eye, ring, feet);
     ornament = model.getObjectByName('boss-ornament');
+  } else {
+    const r = data.radius;
+    mesh(model, data.body, shell, 0, .82, 0, r, .74, r);
+    mesh(model, 'ball', eye, 0, .96, r * .67, r * .41, .17, .17);
+    for (const side of [-1,1]) {
+      feet.push(mesh(model, 'ball', bone, side * r * .54, .24, .14, .19, .23, .34));
+      if (data.action === 'jump') mesh(model, 'cone', bone, side * r * .63, 1.18, -.25, .18, .65, .18);
+    }
+    if (data.shield) shield = mesh(model, 'box', bone, 0, .85, r * .82, r * 1.5, 1.14, .17);
+    else if (data.action) ornament = mesh(model, 'torus', ring, 0, .80, 0, r * 1.27, r * 1.27, .24);
+    else mesh(model, 'gem', eye, 0, 1.34, 0, .25);
   }
   scene.add(root);
-  return { root, model, feet, ornament };
+  return { root, model, feet, ornament, shield };
 }
 function buildBossModel(model, index, shell, bone, eye, ring, feet) {
   if (index === 0) {
@@ -1173,17 +1274,28 @@ function removeEffect(effect) {
 const projected = new THREE.Vector3();
 function floatNumber(x, y, z, amount, type = '') {
   if (!options.numbers || numberList.length >= caps.numbers || (!type && numberList.length > 22)) return;
-  const el = document.createElement('span');
+  const number = numberPool.pop() ?? { el: document.createElement('span') };
+  const { el } = number;
   el.className = `number ${type}`;
   el.textContent = type === 'reaction' ? amount : type === 'heal' ? `+${Math.ceil(amount)}` : String(Math.max(1, Math.round(amount)));
-  dom.floaters.append(el);
-  numberList.push({ x: x + random(-.54, .54), y, z: z + random(-.28, .28), t: -random(0, .055), el });
+  el.hidden = false;
+  el.style.opacity = 0;
+  if (!el.parentNode) dom.floaters.append(el);
+  number.x = x + random(-.54, .54);
+  number.y = y;
+  number.z = z + random(-.28, .28);
+  number.t = -random(0, .055);
+  numberList.push(number);
+}
+function recycleNumber(number) {
+  number.el.hidden = true;
+  numberPool.push(number);
 }
 function updateNumbers(dt) {
   for (let i = numberList.length - 1; i >= 0; i--) {
     const n = numberList[i];
     n.t += dt;
-    if (n.t > .72) { n.el.remove(); numberList.splice(i, 1); continue; }
+    if (n.t > .72) { recycleNumber(n); numberList.splice(i, 1); continue; }
     projected.set(n.x, n.y + Math.max(n.t, 0) * 1.7, n.z).project(camera);
     n.el.style.transform = `translate3d(${(projected.x * .5 + .5) * innerWidth}px,${(.5 - projected.y * .5) * innerHeight}px,0) translate(-50%,-50%)`;
     n.el.style.opacity = n.t < 0 || projected.z > 1 ? 0 : clamp((.72 - n.t) * 3.5, 0, 1);
@@ -1274,7 +1386,7 @@ function rebuildStats() {
   player.hp = clamp(player.hp + delta, 1, maxHP);
   player.stats = {
     damage: 22 * (1 + .2 * bonus('force')) * 1.70 ** bonus('glass') * (1 + bonus('giant') * .22),
-    speed: 7.05 * (1 + .1 * bonus('stride')),
+    speed: 7.05 * (1 + .1 * bonus('stride')) * (hasModifier('gale') ? 1.1 : 1),
     fireInterval: .275 / (1 + .18 * bonus('haste')),
     bulletSpeed: 25 * (1 + .25 * bonus('reach')),
     shots: 1 + bonus('multishot'),
@@ -1298,19 +1410,20 @@ function rebuildStats() {
     player.blades.push(blade);
   }
 }
-function newRun() {
+function newRun({ seed = Math.floor(Math.random() * 0x100000000) >>> 0, resume = false } = {}) {
   clearModal();
   resetInput();
   if (player) for (const blade of player.blades ?? []) scene.remove(blade);
   player = Object.assign(player ?? makePlayer(), {
     maxHP: 100, hp: 100, hpTrail: 100, xp: 0, level: 1, blades: [],
     dashCD: 0, novaCD: 0, invul: 0, fireCD: 0, recoil: 0, dashTime: 0,
-    dashX: 0, dashZ: 0, stride: 0, tilt: 0, dashHits: new Set(), shots: 0
+    dashX: 0, dashZ: 0, stride: 0, tilt: 0, dashHits: new Set(), shots: 0, slowT: 0
   });
   run = {
     floor: 1, wave: 0, waveCount: 2, delay: 0, alive: 0, spawn: [], spawnDelay: 0, boss: null,
     kills: 0, damage: 0, seconds: 0, build: new Map(), pending: [], choices: [],
-    rerolls: 3, revives: 0, phase: 'entry', element: dom.arcana.value || 'thunder'
+    rerolls: 3, revives: 0, phase: 'entry', element: dom.arcana.value || 'thunder',
+    seed, modifiers: [], relics: [], awakenings: [], skills: { guard: null, barrage: null }
   };
   materials.bullet.color.setHex(arcana[run.element].color);
   textIf(dom['nova-name'], arcana[run.element].nova);
@@ -1323,7 +1436,7 @@ function newRun() {
   resize();
   player.root.visible = true;
   player.root.scale.setScalar(1.10);
-  openFloor(1);
+  if (!resume) openFloor(1);
   updateBuild();
   unlockAudio();
   sound('portal');
@@ -1332,13 +1445,14 @@ function clearBattle() {
   for (const e of mobList) scene.remove(e.root);
   for (const d of drops) scene.remove(d.obj);
   for (const fx of effects) removeEffect(fx);
-  for (const n of numberList) n.el.remove();
+  for (const n of numberList) recycleNumber(n);
   mobList.length = drops.length = effects.length = numberList.length = 0;
+  hazards.length = 0;
   for (const b of bolts) { b.life = 0; b.volley = null; b.hits.length = 0; }
   for (const b of hostile) b.life = 0;
   for (const p of dust) p.life = 0;
 }
-function openFloor(floor) {
+function openFloor(floor, { resume = false } = {}) {
   clearBattle();
   run.floor = floor;
   run.wave = 0;
@@ -1349,13 +1463,22 @@ function openFloor(floor) {
   run.alive = 0;
   run.trialDone = false;
   run.phase = 'entry';
-  run.zoneIndex = Math.min(3, Math.floor((floor - 1) / 5));
+  run.zoneIndex = Math.floor((floor - 1) / 5);
+  run.floorPlan = planFloor(run.seed, floor);
+  run.layout = run.floorPlan.layout;
+  run.modifiers = run.floorPlan.modifiers;
+  run.storm = { timer: 14, target: null };
+  rebuildStats();
+  textIf(dom['modifier-list'], run.modifiers.map(id => MODIFIERS[id].name).join(' · '));
+  dom['modifier-list'].title = run.modifiers.map(id => MODIFIERS[id].description).join(' ');
+  dom['modifier-list'].hidden = !run.modifiers.length;
+  dom.arena.classList.toggle('mist', hasModifier('mist'));
   player.root.position.set(0, 0, 3.2);
   player.root.rotation.y = Math.PI;
   player.dashTime = 0;
   player.invul = .70;
   player.recoil = 0;
-  if (floor > 1) healPlayer(12 + player.maxHP * .04, false);
+  if (floor > 1 && !resume) healPlayer(12 + player.maxHP * .04, false);
   view.x = 0; view.z = 3.2;
   aim.x = 0; aim.z = -1;
   dom['trial-entry'].hidden = true;
@@ -1372,24 +1495,36 @@ function startWave() {
     const e = spawnEnemy('boss', 0, -10);
     run.boss = e;
     e.timer = .80;
-    e.move = [-1, 2, 0, 3][run.zoneIndex];
+    e.moveDeck = BOSS_DECKS[run.zoneIndex];
+    e.moveCursor = 0;
     announce(zone.boss, '首领现身');
     sound('boss');
     return;
   }
-  const count = Math.min(14, 3 + run.wave + Math.floor(run.floor * .42));
-  const order = ['stalker', 'shooter', 'charger', 'bomber'];
-  for (let i = 0; i < count; i++) {
-    const pool = run.floor === 1 ? (run.wave === 1 ? 1 : 2) : run.floor === 2 ? 3 : 4;
-    run.spawn.push(i === 0 ? 'stalker' : order[Math.floor(Math.random() * pool)]);
-  }
+  run.spawn.push(...planWave(run.seed, run.floor, run.wave, run.zoneIndex));
 }
-function spawnPoint() {
-  const p = player.root.position;
+function planWave(seed, floor, wave, zoneIndex) {
+  const rng = seeded((seed ^ Math.imul(floor, 0x85ebca6b) ^ Math.imul(wave, 0xc2b2ae35)) >>> 0);
+  const limit = floor <= 20 ? 14 : floor <= 30 ? 15 : 16;
+  const count = Math.min(limit, 3 + wave + Math.floor(floor * .42) + (floor >= 17 && floor <= 20 ? 2 : 0)) - Number(floor % 5 === 0);
+  const pool = Object.entries(WAVE_TABLE).filter(([, [min, , zones]]) => min <= floor && (min <= 14 || zones.includes(zoneIndex)));
+  const used = new Map();
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    const options = pool.filter(([id]) => (used.get(id) ?? 0) < Math.min(Math.ceil(count * .5), enemies[id].limit ?? count));
+    const mixed = floor >= 10 && wave % 3 === 0 && i < 3 ? options.filter(([id]) => !used.has(id)) : options;
+    const kind = floor === 1 && wave === 1 ? 'stalker' :
+      pickWeighted((mixed.length ? mixed : options).map(([id, [, weight, zones]]) => [id, weight * (zones?.includes(zoneIndex) ? 1.35 : 1)]), rng) ?? 'stalker';
+    used.set(kind, (used.get(kind) ?? 0) + 1);
+    result.push({ kind, forceElite: i === 0 && floor >= 17 && floor <= 20 && wave >= 2, seed: (rng() * 0x100000000) >>> 0 });
+  }
+  return result;
+}
+function spawnPoint(rng = Math.random, p = player.root.position) {
   for (let i = 0; i < 27; i++) {
-    const side = Math.floor(Math.random() * 4);
-    const x = side < 2 ? (side ? 1 : -1) * (WIDTH - 2.8) : random(-19.5, 19.5);
-    const z = side > 1 ? (side === 2 ? 1 : -1) * (DEPTH - 2.5) : random(-14, 14);
+    const side = Math.floor(rng() * 4);
+    const x = side < 2 ? (side ? 1 : -1) * (WIDTH - 2.8) : -19.5 + rng() * 39;
+    const z = side > 1 ? (side === 2 ? 1 : -1) * (DEPTH - 2.5) : -14 + rng() * 28;
     if (squared(p.x - x, p.z - z) > 85 && !obstacleList.some(o => squared(o.x - x, o.z - z) < 4)) return [x, z];
   }
   return [p.x > 0 ? -18 : 18, p.z > 0 ? -13 : 13];
@@ -1397,20 +1532,22 @@ function spawnPoint() {
 function spawnEnemy(kind, x, z, minion = false, forceElite = false) {
   if (mobList.length >= caps.enemies) return null;
   const data = enemies[kind], isBoss = kind === 'boss';
+  if (data.limit && mobList.filter(e => !e.dead && e.kind === kind).length >= data.limit) return null;
   const elite = !minion && !isBoss && (forceElite ||
-    (run.floor >= 6 && Math.random() < Math.min(.20, .09 + .006 * (run.floor - 6))));
-  const hp = Math.round(data.hp * (isBoss ? [3.65, 8.25, 21.5, 46.8][run.zoneIndex] : 1 + .072 * (run.floor - 1)) * (elite ? 2.6 : minion ? .72 : 1));
+    (run.floor >= 6 && Math.random() < Math.min(.26, .09 + .006 * (run.floor - 6))));
+  const hp = Math.round(data.hp * (isBoss ? BOSS_HP_MULT[run.zoneIndex] : 1 + .072 * (run.floor - 1)) * (elite ? 2.6 : minion ? .72 : 1));
   const model = makeEnemy(kind, elite, run.zoneIndex);
   const scale = elite ? 1.3 : isBoss ? 1.28 : 1;
   model.root.scale.setScalar(scale);
   model.root.position.set(x, 0, z);
   const e = {
     ...model, kind, elite, data, hp, maxHP: hp, trail: hp, r: data.radius * scale,
-    speed: data.speed * (1 + .013 * (run.floor - 1)) * (elite ? 1.10 : 1),
-    damage: data.damage * (1 + .028 * (run.floor - 1)) * (elite ? 1.22 : 1),
+    speed: data.speed * (1 + .013 * (run.floor - 1)) * (elite ? 1.10 : 1) * (hasModifier('gale') ? 1.1 : 1),
+    damage: data.damage * (1 + .028 * (run.floor - 1)) * (elite ? 1.22 : 1) * (hasModifier('overload') ? 1.12 : 1),
     timer: random(.5, 1.75), state: 'hunt', move: -1, dead: false, enrage: false, action: 0,
     phase: random(0, TAU), flash: 0, slow: 0, burn: 0, burnTick: 0, charge: 0, bladeTime: 0,
-    dx: 0, dz: -1, turn: Math.random() < .5 ? -1 : 1, spawnTime: .33, fx: null, summoned: minion
+    dx: 0, dz: -1, turn: Math.random() < .5 ? -1 : 1, spawnTime: .33, fx: null, summoned: minion,
+    shieldDamage: 0, shieldBroken: 0, ward: 0
   };
   mobList.push(e);
   run.alive++;
@@ -1421,6 +1558,8 @@ function spawnEnemy(kind, x, z, minion = false, forceElite = false) {
 function finishFloor(reason = 'clear') {
   run.phase = 'cleared';
   for (const b of hostile) b.life = 0;
+  for (const hazard of hazards) if (hazard.fx) hazard.fx.t = hazard.fx.duration;
+  hazards.length = 0;
   for (const d of drops) d.pull = true;
   run.pending.push(reason);
   sound('portal');
@@ -1485,8 +1624,11 @@ function updateFloor(dt) {
     if (run.spawn.length) {
       run.spawnDelay -= dt;
       if (run.spawnDelay <= 0 && mobList.length < caps.enemies) {
-        const [x, z] = spawnPoint();
-        spawnEnemy(run.spawn.shift(), x, z);
+        const { kind, seed, forceElite } = run.spawn.shift();
+        const rng = seeded(seed);
+        let [x, z] = spawnPoint(rng, { x: 0, z: 3.2 });
+        if (squared(x - player.root.position.x, z - player.root.position.z) < 25) [x, z] = spawnPoint(rng);
+        spawnEnemy(kind, x, z, false, forceElite);
         run.spawnDelay = run.wave === 1 && run.floor === 1 ? .28 : .19;
       }
     } else if (!run.alive) {
@@ -1522,13 +1664,14 @@ function updateFloor(dt) {
 function dropLoot(e) {
   const pos = e.root.position;
   const count = e.kind === 'boss' ? 8 : e.elite ? 3 : 1;
-  const value = Math.ceil(e.data.xp * (1 + .055 * (run.floor - 1)) * (e.elite ? 2.4 : e.summoned ? .48 : 1) / count);
+  const value = Math.ceil(e.data.xp * (1 + .055 * (run.floor - 1)) * (e.elite ? 2.4 : e.summoned ? .48 : 1) * (hasModifier('famine') ? 1.25 : 1) / count);
   for (let i = 0; i < count; i++) addDrop(pos.x + random(-.82,.82), pos.z + random(-.82,.82), value, false);
-  if (e.kind === 'boss' || Math.random() < (player.hp < player.maxHP * .45 ? .39 : .23)) {
+  if (e.kind === 'boss' || Math.random() < (player.hp < player.maxHP * .45 ? .39 : .23) * (hasModifier('famine') ? .5 : 1)) {
     addDrop(pos.x + .48, pos.z + .47, e.kind === 'boss' ? 32 : 9, true);
   }
 }
 function addDrop(x, z, value, healing) {
+  if (healing && hasModifier('mist')) value *= .7;
   if (drops.length >= caps.drops) {
     const existing = drops.find(d => d.healing === healing);
     if (existing) { existing.value += value; return; }
@@ -1669,6 +1812,7 @@ function aimAtPointer() {
 }
 function updatePlayer(dt) {
   const p = player.root.position, s = player.stats;
+  player.slowT = Math.max(0, player.slowT - dt);
   player.invul = Math.max(0, player.invul - dt);
   player.dashCD = Math.max(0, player.dashCD - dt);
   player.novaCD = Math.max(0, player.novaCD - dt);
@@ -1710,7 +1854,8 @@ function updatePlayer(dt) {
       }
     }
   } else {
-    place(p, dx * s.speed * dt, dz * s.speed * dt, .49);
+    const speed = s.speed * (player.slowT > 0 ? .72 : 1);
+    place(p, dx * speed * dt, dz * speed * dt, .49);
   }
   if ((input.fire || (input.auto && run.alive > 0)) && player.fireCD <= 0) shoot();
   player.stride += dt * (norm ? 13 : 4);
@@ -1853,11 +1998,11 @@ function launchBolt(x, z, angle, scale, volley) {
   b.ricochet = s.ricochet;
   b.hits.length = 0;
 }
-function fireHostile(x, z, angle, speed, damage, radius = .20) {
+function fireHostile(x, z, angle, speed, damage, radius = .20, hex = false) {
   const b = hostile[hostileCursor++ % hostileCapacity];
   b.dx = Math.cos(angle); b.dz = Math.sin(angle);
   b.x = x + b.dx * .56; b.z = z + b.dz * .56;
-  b.speed = speed; b.damage = damage; b.r = radius; b.life = 6;
+  b.speed = speed; b.damage = damage; b.r = radius; b.life = 6; b.hex = hex;
 }
 function aimBolt(b, dt) {
   const strength = bonus('homing');
@@ -1909,7 +2054,7 @@ function updateProjectiles(dt) {
       b.hits.push(target);
       const hitIndex = b.volley && target === run.boss ? b.volley.bossHits++ : 0;
       const overlap = hitIndex === 0 ? 1 : hitIndex === 1 ? .55 : .32;
-      damageEnemy(target, b.damage * overlap * (critical ? player.stats.critDamage : 1), 'bolt', critical);
+      damageEnemy(target, b.damage * overlap * (critical ? player.stats.critDamage : 1), 'bolt', critical, -b.dx, -b.dz);
       if (b.penetration <= 0) b.life = 0;
       else b.penetration--;
     }
@@ -1937,19 +2082,39 @@ function updateProjectiles(dt) {
     const tx = b.x + b.dx * b.speed * dt, tz = b.z + b.dz * b.speed * dt;
     if (Math.abs(tx) > WIDTH - .48 || Math.abs(tz) > DEPTH - .48) { b.life = 0; continue; }
     const t = segmentHit(b.x, b.z, tx, tz, p.x, p.z, b.r + .42);
-    if (obstacleList.some(o => segmentHit(b.x, b.z, tx, tz, o.x, o.z, o.r + b.r * .55) < t)) {
-      b.life = 0;
-      continue;
+    let blocked = false;
+    for (const o of obstacleList) {
+      if (segmentHit(b.x, b.z, tx, tz, o.x, o.z, o.r + b.r * .55) < t) {
+        blocked = true;
+        break;
+      }
     }
+    if (blocked) { b.life = 0; continue; }
     if (t !== Infinity) {
       b.life = 0;
-      hurtPlayer(b.damage);
+      if (b.hex) {
+        if (player.invul <= 0 && player.dashTime <= 0) player.slowT = 2.2;
+      } else hurtPlayer(b.damage);
       if (mode !== 'play') break;
     } else { b.x = tx; b.z = tz; }
   }
 }
-function damageEnemy(e, amount, source, critical = false) {
+function damageEnemy(e, amount, source, critical = false, hitX, hitZ) {
   if (e.dead || amount <= 0) return;
+  if (e.data.shield && source === 'bolt') {
+    if (e.shieldBroken > 0) amount *= 1.35;
+    else if (Math.sin(e.root.rotation.y) * hitX + Math.cos(e.root.rotation.y) * hitZ >= Math.cos(55 * Math.PI / 180)) {
+      e.shieldDamage += amount;
+      amount = Math.max(1, amount * e.data.shield);
+      if (e.shieldDamage >= 120) { e.shieldDamage = 0; e.shieldBroken = 2.4; }
+    }
+  }
+  if (e.ward > 0) {
+    const absorbed = Math.min(e.ward, amount);
+    e.ward -= absorbed;
+    amount -= absorbed;
+    if (!amount) return;
+  }
   const dealt = Math.min(e.hp, amount);
   e.hp -= dealt;
   e.flash = .08;
@@ -2001,6 +2166,7 @@ function killEnemy(e) {
   if (e.fx) e.fx.t = e.fx.duration;
   dropLoot(e);
   const { x, z } = e.root.position;
+  if (e.data.split) for (const side of [-1, 1]) spawnEnemy(e.data.split, clamp(x + side * 1.2,-21,21), clamp(z + side * .65,-16,16), true);
   const boss = e.kind === 'boss';
   const color = e.elite ? 0xffc35d : boss ? zone.fire : e.data.color;
   sparks(x, .78, z, color, boss ? 95 : e.elite ? 34 : 20, boss ? 10 : 5.1, boss ? .48 : .29, boss ? 1.12 : .54);
@@ -2063,6 +2229,8 @@ function updateEnemy(e, dt) {
     return;
   }
   e.flash = Math.max(0, e.flash - dt);
+  e.shieldBroken = Math.max(0, e.shieldBroken - dt);
+  if (e.shield) e.shield.visible = e.shieldBroken <= 0;
   e.bladeTime = Math.max(0, e.bladeTime - dt);
   e.slow = Math.max(0, e.slow - dt);
   e.charge = Math.max(0, e.charge - dt);
@@ -2150,6 +2318,7 @@ function updateEnemy(e, dt) {
       }
     }
   }
+  if (!isBoss && e.data.body) updateSpecialEnemy(e, dt, r, dx, dz, speed);
   if (mode === 'play' && e.kind !== 'bomber' && e.state !== 'dash' && e.state !== 'leap' && distance(pos, p) < e.r + .39) {
     hurtPlayer(e.damage);
   }
@@ -2158,7 +2327,7 @@ function updateEnemy(e, dt) {
   const scale = e.kind === 'bomber' && e.state === 'tell' ? 1.05 + (2 - e.timer) * .28 : 1;
   e.model.scale.setScalar(scale * (e.flash > 0 ? 1.045 : 1));
   if (e.kind === 'shooter') e.model.position.y = .12 + .19 * Math.sin(t * 3);
-  else if (!isBoss) e.model.position.y = .035 * Math.sin(t * 11);
+  else if (!isBoss && e.state !== 'leap') e.model.position.y = .035 * Math.sin(t * 11);
   if (e.ornament) { e.ornament.rotation.z += dt * 1.65; e.ornament.rotation.y = Math.sin(t * 2) * .72; }
   e.feet.forEach((foot, i) => { foot.rotation.x = Math.sin(t * 9 + i * Math.PI) * .18; });
   if (e.flashing !== (e.flash > 0)) {
@@ -2171,16 +2340,89 @@ function updateEnemy(e, dt) {
     }
   }
 }
+function updateSpecialEnemy(e, dt, r, dx, dz, speed) {
+  const p = player.root.position, pos = e.root.position, data = e.data;
+  if (e.state === 'leap') {
+    const t = clamp(1 - e.timer / .42, 0, 1);
+    place(pos, lerp(e.fromX, e.targetX, t) - pos.x, lerp(e.fromZ, e.targetZ, t) - pos.z, e.r, true);
+    e.model.position.y = Math.sin(t * Math.PI) * 3.2;
+    if (e.timer > 0) return;
+    endTell(e);
+    shock(pos.x, pos.z, 3.4, data.color);
+    if (distance(p, pos) < 3.4) hurtPlayer(e.damage * 1.2);
+    e.state = 'hunt'; e.timer = data.cd;
+    return;
+  }
+  if (e.state === 'tell') {
+    if (e.timer > 0) return;
+    if (data.action === 'jump') { e.state = 'leap'; e.timer = .42; return; }
+    endTell(e);
+    const angle = Math.atan2(e.dz, e.dx);
+    if (data.action === 'beam' || data.action === 'steam') {
+      const x = pos.x + e.dx * data.range, z = pos.z + e.dz * data.range;
+      telegraph(pos.x, pos.z, data.action === 'beam' ? .34 : .85, data.color, .18, e.dx, e.dz, data.range);
+      if (segmentHit(pos.x, pos.z, x, z, p.x, p.z, data.action === 'beam' ? .68 : 1.10) !== Infinity) hurtPlayer(e.damage);
+    } else if (data.action === 'hex') fireHostile(pos.x, pos.z, angle, 5.2, 0, .3, true);
+    else if (data.action === 'ring') ringFire(e, data.shots, 8.5, 1);
+    else if (data.action === 'zap') {
+      shock(pos.x, pos.z, 2.4, data.color);
+      if (distance(p, pos) < 2.4) hurtPlayer(e.damage);
+    } else if (data.action === 'ward') {
+      const target = mobList.find(target => target !== e && !target.dead && target.kind !== 'boss' && target.ward <= 0 && distance(target.root.position, pos) < 10);
+      if (target) { target.ward = target.maxHP * .35; shock(target.root.position.x, target.root.position.z, 1.5, data.color); }
+    } else if (data.action === 'lob') addHazard(e.targetX, e.targetZ, 2.4, .12, e.damage, data.color);
+    e.state = 'hunt'; e.timer = data.cd;
+    return;
+  }
+  faceEnemy(e, dx, dz, dt);
+  const radial = data.keep ? clamp((r - data.keep) * .22, -.85, .85) : 1;
+  if (speed > 0) moveEnemy(e, dx * radial - (data.keep ? dz * e.turn * .5 : 0), dz * radial + (data.keep ? dx * e.turn * .5 : 0), speed, dt);
+  if (data.action === 'ambush') {
+    e.model.visible = r < 7 || Math.sin(worldTime * 8) > .3;
+    return;
+  }
+  if (!data.action || e.timer > 0 || r > data.range) return;
+  e.state = 'tell'; e.timer = data.action === 'beam' ? 1.15 : .62;
+  e.dx = dx; e.dz = dz;
+  if (data.action === 'jump' || data.action === 'lob') {
+    e.fromX = pos.x; e.fromZ = pos.z;
+    e.targetX = clamp(p.x, -20, 20); e.targetZ = clamp(p.z, -15, 15);
+    e.fx = telegraph(e.targetX, e.targetZ, data.action === 'jump' ? 3.4 : 2.4, data.color, e.timer + .42);
+  } else if (data.action === 'beam' || data.action === 'steam') {
+    e.fx = telegraph(pos.x, pos.z, .4, data.color, e.timer, dx, dz, data.range);
+  } else e.fx = telegraph(pos.x, pos.z, data.action === 'zap' ? 2.4 : e.r * 1.5, data.color, e.timer);
+}
 
+function addHazard(x, z, r, life, damage, color, delay = 0, shape = 'circle') {
+  if (hazards.length >= 12) return;
+  hazards.push({ x, z, r, life, damage, color, delay, shape, tick: 0, fx: telegraph(x, z, r, color, delay + life) });
+}
+function updateHazards(dt) {
+  const p = player.root.position;
+  for (let i = hazards.length - 1; i >= 0 && mode === 'play'; i--) {
+    const hazard = hazards[i];
+    if (hazard.delay > 0) { hazard.delay -= dt; continue; }
+    hazard.life -= dt;
+    hazard.tick -= dt;
+    if (hazard.tick <= 0) {
+      hazard.tick += .6;
+      const r = hazard.shape === 'outer' ? 12 + Math.max(0, hazard.life) * 1.33 : hazard.r;
+      const d = distance(p, hazard);
+      if (hazard.shape === 'outer' ? d > r : d < r) hurtPlayer(hazard.damage);
+      if (hazard.life < .3) shock(hazard.x, hazard.z, hazard.r, hazard.color);
+    }
+    if (hazard.life <= 0) hazards.splice(i, 1);
+  }
+}
 function enrageBoss(e) {
   const { x, z } = e.root.position;
   e.enrage = true;
-  if (run.zoneIndex === 0) {
-    endTell(e);
-    e.model.position.y = 0;
-    e.state = 'hunt';
-    e.timer = .24;
-  }
+  endTell(e);
+  e.model.position.y = 0;
+  e.state = 'hunt';
+  e.timer = .24;
+  e.stage = 2;
+  e.stageFresh = true;
   impact(.07, .75);
   sound('boss');
   announce('首领狂暴', zone.boss);
@@ -2239,43 +2481,52 @@ function updateBoss(e, dt, r, dx, dz, speed) {
 }
 function beginBossMove(e, p, dx, dz) {
   const pos = e.root.position;
-  e.move = (e.move + 1) % bossMoves.length;
+  const [first, next = [], last = []] = e.moveDeck;
+  const deck = e.stage === 3 ? [...first, ...next, ...last] : e.enrage ? [...first, ...next] : first;
+  if (e.stageFresh) {
+    e.move = (e.stage === 3 ? last[0] : next[0]) ?? first[0];
+    e.stageFresh = false;
+  } else {
+    e.move = deck[e.moveCursor++ % deck.length];
+    if (e.move === e.previousMove) e.move = deck[e.moveCursor++ % deck.length];
+  }
+  e.previousMove = e.move;
   e.state = 'tell';
   e.dx = dx; e.dz = dz;
   e.root.rotation.y = Math.atan2(dx, dz);
-  const h = e.enrage ? .78 : 1;
-  if (e.move === 0) {
-    e.timer = .65 * h;
+  const h = e.stage === 3 ? .70 : e.enrage ? .78 : 1;
+  e.timer = BOSS_MOVES[e.move][1] * h;
+  e.targetX = clamp(p.x, -20, 20); e.targetZ = clamp(p.z, -15, 15);
+  if (e.move === 'spiral') {
     e.fx = telegraph(pos.x, pos.z, e.r + .57, zone.fire, e.timer);
-  } else if (e.move === 1) {
-    e.timer = .83 * h;
+  } else if (e.move === 'dash' || e.move === 'phase' || e.move === 'lance') {
     e.action = rayLength(pos.x, pos.z, dx, dz, e.r, 15 + run.zoneIndex * 1.4);
     e.fx = telegraph(pos.x, pos.z, e.r + .48, 0xff783b, e.timer, dx, dz, e.action);
-  } else if (e.move === 2) {
-    e.timer = .90 * h;
+  } else if (e.move === 'ring') {
     e.fx = telegraph(pos.x, pos.z, e.r + 2.15, 0xffa24a, e.timer);
-  } else if (e.move === 3) {
-    e.timer = .69 * h;
+  } else if (e.move === 'summon') {
     e.fx = telegraph(pos.x, pos.z, 3.1, zone.fire, e.timer);
-  } else {
-    e.timer = .59 * h;
+  } else if (e.move === 'leap') {
     e.action = (e.enrage ? 4.55 : 3.82) + run.zoneIndex * .18;
     e.targetX = clamp(p.x, -WIDTH + e.r + .51, WIDTH - e.r - .51);
     e.targetZ = clamp(p.z, -DEPTH + e.r + .51, DEPTH - e.r - .51);
     e.fromX = pos.x; e.fromZ = pos.z;
     e.duration = e.enrage ? .54 : .67;
     e.fx = telegraph(e.targetX, e.targetZ, e.action, 0xff7349, e.timer + e.duration);
-  }
+  } else if (e.move === 'blink') {
+    place(pos, p.x - aim.x * 2.2 - pos.x, p.z - aim.z * 2.2 - pos.z, e.r, true);
+    e.fx = telegraph(pos.x, pos.z, 3.4, zone.fire, e.timer);
+  } else e.fx = telegraph(e.targetX, e.targetZ, e.move === 'cage' ? 3.5 : 2.8, zone.fire, e.timer);
   sound('warn', pos.x);
 }
 function executeBossMove(e) {
   const pos = e.root.position;
-  if (e.move !== 4) endTell(e);
-  if (e.move === 0) {
+  if (e.move !== 'leap') endTell(e);
+  if (e.move === 'spiral' || e.move === 'storm') {
     e.state = 'spiral'; e.timer = 1.60 + run.zoneIndex * .1; e.action = 0; e.spin = Math.atan2(e.dz, e.dx);
-  } else if (e.move === 1) {
+  } else if (e.move === 'dash' || e.move === 'phase') {
     e.state = 'dash'; e.velocity = e.enrage ? 24.5 : 20.5; e.timer = e.action / e.velocity;
-  } else if (e.move === 2) {
+  } else if (e.move === 'ring' || e.move === 'ringWave') {
     e.state = 'recover'; e.timer = e.enrage ? .27 : .39;
     const r = e.r + 2.15;
     if (distance(pos, player.root.position) < r) hurtPlayer(e.damage * 1.18);
@@ -2284,18 +2535,60 @@ function executeBossMove(e) {
     ringFire(e, 14 + run.zoneIndex * 2 + (e.enrage ? 8 : 0), 7.1 + run.zoneIndex * .52, .71);
     if (e.enrage) ringFire(e, 12 + run.zoneIndex * 2, 5.0, .61, .14);
     sound('nova');
-  } else if (e.move === 3) {
+  } else if (e.move === 'summon') {
     e.state = 'recover'; e.timer = .43;
     const pools = [['stalker','shooter'], ['shooter','bomber'], ['charger','bomber'], ['stalker','shooter','charger']];
     const count = 2 + (run.zoneIndex >= 2 ? 1 : 0) + (e.enrage ? 2 : 0);
     for (let i = 0; i < count; i++) {
       const [x,z] = polar(i * TAU / count + worldTime, 3.1);
-      const pool = pools[run.zoneIndex];
+      const pool = zone.summons ?? pools[run.zoneIndex];
       spawnEnemy(pool[i % pool.length], clamp(pos.x + x, -WIDTH + 2.4, WIDTH - 2.4), clamp(pos.z + z, -DEPTH + 2.4, DEPTH - 2.4), true);
     }
     shock(pos.x, pos.z, 3.2, zone.fire, .49);
-  } else {
+  } else if (e.move === 'leap') {
     e.state = 'leap'; e.timer = e.duration;
+  } else executeSpecialBossMove(e, e.move);
+}
+function executeSpecialBossMove(e, move) {
+  const pos = e.root.position, p = player.root.position;
+  const x = e.targetX, z = e.targetZ, color = zone.fire, d = e.damage;
+  e.state = 'recover'; e.timer = e.stage === 3 ? .3 : .55;
+  if (move === 'fan') {
+    const angle = Math.atan2(e.dz, e.dx);
+    for (let i = -3; i <= 3; i++) fireHostile(pos.x, pos.z, angle + .17 * i, 12, d * .8);
+  } else if (move === 'cage') {
+    if (distance(p, { x, z }) < 3.5) hurtPlayer(d * 1.3);
+    shock(x, z, 3.5, color);
+  } else if (move === 'spike' || move === 'lance') {
+    for (let i = 1; i <= 5; i++) addHazard(pos.x + e.dx * i * 2.2, pos.z + e.dz * i * 2.2, 1.55, .12, d * 1.05, color, i * .12);
+  } else if (move === 'poison' || move === 'zone') {
+    for (const offset of [-3,0,3]) addHazard(x + offset, z, 2.4, 4.5, d * .4, color, .45);
+  } else if (move === 'bloom' || move === 'eruption' || move === 'hammer') {
+    const points = move === 'bloom' ? [[0,0],[-12,-9],[0,-9],[12,-9],[-12,0],[12,0],[-12,9],[0,9],[12,9],[-5,-4],[5,4],[5,-4]] :
+      move === 'hammer' ? [[x,z],[x + 2,z],[x - 2,z]] : [[x,z],[x - 3,z],[x + 3,z],[x,z - 3],[x,z + 3]];
+    points.forEach(([cx, cz], i) => addHazard(cx, cz, move === 'hammer' ? 3.1 : 2.0, .12, d * 1.1, color, move === 'hammer' ? .5 * (i + 1) : .62));
+  } else if (move === 'heat') {
+    for (const [cx, cz] of [[-8,-6],[8,-6],[-8,6],[8,6]]) addHazard(cx, cz, 3.35, 6, d * .55, color);
+  } else if (move === 'rift') {
+    addHazard(0, 0, 12, 6, d * .65, color, 0, 'outer');
+  } else if (move === 'blink') {
+    shock(pos.x, pos.z, 3.4, color);
+    if (distance(p, pos) < 3.4) hurtPlayer(d * 1.25);
+  } else if (move === 'mirror' || move === 'encore') {
+    const kind = move === 'mirror' ? 'orbitter' : 'puppet';
+    for (const side of [-1,1]) spawnEnemy(kind, clamp(pos.x + side * 4, -20, 20), clamp(pos.z, -15, 15), true);
+    if (move === 'encore') executeSpecialBossMove(e, ['eruption','heat','spike','zone'][Math.floor(Math.random() * 4)]);
+  } else if (move === 'pull' || move === 'magnet') {
+    const tx = move === 'magnet' ? Math.sign(p.x || 1) * 8 : pos.x, tz = move === 'magnet' ? p.z : pos.z;
+    place(p, (tx - p.x) * .42, (tz - p.z) * .42, .49);
+    shock(tx, tz, 4, color);
+  } else if (move === 'heal') {
+    const vines = run.terrain?.vines?.length ?? 0;
+    if (vines) e.hp = Math.min(e.maxHP, e.hp + e.maxHP * .012 * vines);
+  } else if (move === 'tidecall') {
+    if (run.terrain) run.terrain.forced = 6;
+  } else if (move === 'curtain') {
+    if (run.terrain) run.terrain.curtain = 4;
   }
 }
 function ringFire(e, count, speed, power, offset = 0) {
@@ -2316,7 +2609,7 @@ function updateHUD(dt) {
   textIf(dom.kills, run.kills);
   textIf(dom.time, timeText(run.seconds));
   textIf(dom.damage, Math.round(run.damage).toLocaleString('zh-CN'));
-  textIf(dom['floor-number'], `${pad(run.floor)} / 20`);
+  textIf(dom['floor-number'], `${pad(run.floor)} / ${MAX_FLOOR}`);
   textIf(dom['zone-name'], zone.name);
   textIf(dom['wave-text'], run.phase === 'trial' ? `权柄试炼 · 剩余 ${run.alive}` :
     run.phase === 'portal' ? '传送门已开启' : run.phase === 'cleared' ? '已清空' :
@@ -2337,7 +2630,7 @@ function updateHUD(dt) {
   dom['boss-hud'].hidden = !boss;
   if (boss) {
     textIf(dom['boss-name'], boss.enrage ? `${zone.boss} · 狂暴` : zone.boss);
-    textIf(dom['boss-move'], boss.state === 'hunt' ? '' : bossMoves[boss.move] ?? '');
+    textIf(dom['boss-move'], boss.state === 'hunt' ? '' : BOSS_MOVES[boss.move]?.[0] ?? '');
     boss.trail = Math.max(boss.hp, lerp(boss.trail, boss.hp, 1 - Math.exp(-3.1 * dt)));
     bar(dom['boss-fill'], boss.hp / boss.maxHP);
     bar(dom['boss-trail'], boss.trail / boss.maxHP);
@@ -2439,7 +2732,7 @@ function chooseOptions(exclude = []) {
     const pool = available.filter(b => !exclude.includes(b.id));
     const candidates = pool.length ? pool : available;
     const tiers = rarities.map((r, tier) => candidates.some(b => b.tier === tier) ?
-      r.weight * (tier === 0 ? 1 : 1 + (run.floor - 1) * tier * .025) : 0);
+      (r.weight + (hasModifier('fortune') ? [-8, 0, 5, 3][tier] : 0)) * (tier === 0 ? 1 : 1 + (run.floor - 1) * tier * .025) : 0);
     let choice = Math.random() * tiers.reduce((sum, w) => sum + w, 0);
     const tier = tiers.findIndex(w => (choice -= w) < 0);
     const sameTier = candidates.filter(b => b.tier === tier);
@@ -2758,10 +3051,31 @@ function updateGame(dt, elapsed = dt) {
   }
   updateProjectiles(dt);
   if (mode !== 'play') return;
+  updateHazards(dt);
+  if (mode !== 'play') return;
   for (let i = mobList.length - 1; i >= 0; i--) if (mobList[i].dead) mobList.splice(i, 1);
   updateDrops(dt);
+  updateModifiers(dt);
+  if (mode !== 'play') return;
   updateFloor(dt);
   if (run.pending.length && mode === 'play') openBlessing(run.pending.shift());
+}
+function updateModifiers(dt) {
+  if (!hasModifier('storm') || !['combat', 'trial'].includes(run.phase)) return;
+  const storm = run.storm, p = player.root.position;
+  storm.timer -= dt;
+  if (storm.timer > 0) return;
+  if (!storm.target) {
+    const [x, z] = polar(random(0, TAU), random(8, 14));
+    storm.target = { x: clamp(p.x + x, -20, 20), z: clamp(p.z + z, -15, 15) };
+    storm.timer = 1.1;
+    storm.fx = telegraph(storm.target.x, storm.target.z, 2.8, 0xe6adfb, storm.timer);
+  } else {
+    shock(storm.target.x, storm.target.z, 2.8, 0xf0bcff);
+    if (distance(storm.target, p) < 2.8) hurtPlayer(16);
+    storm.timer = 12.9;
+    storm.target = null;
+  }
 }
 function animateWorld(dt, visualTime, title) {
   for (const flame of flames) {
@@ -2843,12 +3157,16 @@ function showTitle() {
   showBest();
 }
 let renderScale = 1, frameSamples = 0, frameTotal = 0, qualityWait = 0, renderDirty = true;
+const PIXEL_BUDGET = 2400000;
+function pixelRatioFor(width, height, base) {
+  return Math.min(base, Math.sqrt(PIXEL_BUDGET / Math.max(1, width * height))) * renderScale;
+}
 function resize() {
   camera.aspect = innerWidth / Math.max(1, innerHeight);
   const narrow = clamp((.86 - camera.aspect) / .44, 0, 1);
   camera.fov = dom.hud.hidden ? 44 : 44 + narrow * 26;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(touch.enabled ? 1.25 : 1.5, devicePixelRatio || 1) * renderScale);
+  renderer.setPixelRatio(pixelRatioFor(innerWidth, innerHeight, Math.min(touch.enabled ? 1.25 : 1.5, devicePixelRatio || 1)));
   renderer.setSize(innerWidth, innerHeight, false);
   dustPoints.material.uniforms.pixels.value = renderer.domElement.height * .71;
   renderDirty = true;
@@ -2902,7 +3220,7 @@ function frame(now) {
 }
 function boot() {
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: !touch.enabled && innerWidth * innerHeight * devicePixelRatio ** 2 <= PIXEL_BUDGET, alpha: false, powerPreference: 'high-performance' });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = .92;
     renderer.outputEncoding = THREE.sRGBEncoding;
