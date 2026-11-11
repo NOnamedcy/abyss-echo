@@ -1,4 +1,4 @@
-# 深渊回响 2.1 · ABYSS ECHO
+# 深渊回响 2.1.1 · ABYSS ECHO
 
 一款纯前端 3D 动作肉鸽（Roguelike）游戏，基于 Three.js，无需后端、无需安装。
 

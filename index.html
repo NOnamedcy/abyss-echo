@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="深渊回响，一款可离线游玩的 3D 动作肉鸽游戏。">
-<title>深渊回响 2.1 · Abyss Echo</title>
+<title>深渊回响 2.1.1 · Abyss Echo</title>
 <link rel="icon" href="data:,">
 <style>
   :root {
@@ -327,7 +327,7 @@
       <span><kbd>Q</kbd> 法印技</span>
     </div>
     <div class="touch-guide">拖动摇杆移动，自动瞄准射击</div>
-    <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.1</div>
+    <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.1.1</div>
   </footer>
 </main>
 
@@ -1334,7 +1334,7 @@ function clearBattle() {
   for (const fx of effects) removeEffect(fx);
   for (const n of numberList) n.el.remove();
   mobList.length = drops.length = effects.length = numberList.length = 0;
-  for (const b of bolts) { b.life = 0; b.hits.length = 0; }
+  for (const b of bolts) { b.life = 0; b.volley = null; b.hits.length = 0; }
   for (const b of hostile) b.life = 0;
   for (const p of dust) p.life = 0;
 }
@@ -1825,19 +1825,21 @@ function shoot() {
   player.shots++;
   const x = p.x + aim.x * .72, z = p.z + aim.z * .72;
   const center = Math.atan2(aim.z, aim.x);
+  const storm = bonus('storm');
+  const ringShots = storm && player.shots % 4 === 0 ? 11 + storm * 4 : 0;
+  const volley = run.zoneIndex === 0 && run.boss && (s.shots > 1 || ringShots) ? { bossHits: 0 } : null;
   for (let i = 0; i < s.shots; i++) {
     const offset = i - (s.shots - 1) / 2;
-    launchBolt(x, z, center + offset * .128, Math.max(.60, 1 - Math.abs(offset) * .23));
+    launchBolt(x, z, center + offset * .128, Math.max(.60, 1 - Math.abs(offset) * .23), volley);
   }
-  if (bonus('storm') && player.shots % 4 === 0) {
-    const count = 11 + bonus('storm') * 4;
-    for (let i = 0; i < count; i++) launchBolt(p.x, p.z, center + i * TAU / count, .72);
+  if (ringShots) {
+    for (let i = 0; i < ringShots; i++) launchBolt(p.x, p.z, center + i * TAU / ringShots, .72, volley);
     shock(p.x, p.z, 2.2, 0x90e9ff, .26);
   }
   sparks(x, 1.08, z, arcana[run.element].color, 4, 1.4, .25, .16);
   sound('shoot');
 }
-function launchBolt(x, z, angle, scale) {
+function launchBolt(x, z, angle, scale, volley) {
   const b = bolts[shotCursor++ % shotCapacity];
   const s = player.stats;
   b.x = x; b.z = z;
@@ -1846,6 +1848,7 @@ function launchBolt(x, z, angle, scale) {
   b.life = 1.12;
   b.r = s.bulletRadius;
   b.damage = s.damage * scale;
+  b.volley = volley;
   b.penetration = s.penetration;
   b.ricochet = s.ricochet;
   b.hits.length = 0;
@@ -1904,7 +1907,9 @@ function updateProjectiles(dt) {
       if (!target) break;
       const critical = Math.random() < player.stats.crit;
       b.hits.push(target);
-      damageEnemy(target, b.damage * (critical ? player.stats.critDamage : 1), 'bolt', critical);
+      const hitIndex = b.volley && target === run.boss ? b.volley.bossHits++ : 0;
+      const overlap = hitIndex === 0 ? 1 : hitIndex === 1 ? .55 : .32;
+      damageEnemy(target, b.damage * overlap * (critical ? player.stats.critDamage : 1), 'bolt', critical);
       if (b.penetration <= 0) b.life = 0;
       else b.penetration--;
     }
@@ -2170,6 +2175,12 @@ function updateEnemy(e, dt) {
 function enrageBoss(e) {
   const { x, z } = e.root.position;
   e.enrage = true;
+  if (run.zoneIndex === 0) {
+    endTell(e);
+    e.model.position.y = 0;
+    e.state = 'hunt';
+    e.timer = .24;
+  }
   impact(.07, .75);
   sound('boss');
   announce('首领狂暴', zone.boss);
