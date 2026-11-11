@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="深渊回响，一款可离线游玩的 3D 动作肉鸽游戏。">
-<title>深渊回响 2.0 · Abyss Echo</title>
+<title>深渊回响 2.1 · Abyss Echo</title>
 <link rel="icon" href="data:,">
 <style>
   :root {
@@ -35,6 +35,7 @@
   .number { position: absolute; top: 0; left: 0; color: #fff1df; font: 700 17px var(--mono); text-shadow: 0 2px 4px #000, 0 0 10px #351509; white-space: nowrap; }
   .number.critical { color: #ffcd61; font-size: 24px; }
   .number.heal { color: #83efac; }
+  .number.reaction { color: #f5d58b; font: 700 14px var(--sans); }
   button, input { font: inherit; }
   button { color: inherit; cursor: pointer; touch-action: manipulation; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
@@ -59,6 +60,12 @@
   .title-content .subtitle { margin: 22px 0 0 4px; display: flex; align-items: center; gap: 17px; color: #d3ad75; font: 500 clamp(13px, 1.45vw, 22px)/1 Georgia, serif; letter-spacing: .36em; }
   .subtitle::before { content: ""; width: 30px; height: 1px; background: var(--gold-dim); }
   .title-content .premise { margin: 32px 0 26px 4px; color: #c3b9a8; font-size: clamp(13px, 1.1vw, 17px); letter-spacing: .09em; }
+  .spell-picker { display: flex; align-items: center; gap: 8px; margin: 0 0 12px 4px; color: var(--gold); font-size: 13px; }
+  .spell-picker span { flex: none; }
+  .spell-picker select {
+    min-width: 0; min-height: 44px; padding: 5px 8px; font: inherit; color: var(--text);
+    background: #121117; border: 1px solid #c9a66a6e; touch-action: manipulation;
+  }
   .primary {
     position: relative; display: inline-flex; min-height: 53px; align-items: center; justify-content: center; gap: 32px;
     padding: 0 26px; background: linear-gradient(106deg, #e6bc7b, #b38750);
@@ -131,6 +138,7 @@
   #banner span { display: block; margin-top: 6px; color: #d0c3ab; font-size: 12px; letter-spacing: .16em; }
   @keyframes banner { 0% { opacity: 0; translate: 0 -8px; } 15%, 65% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 4px; } }
   #portal-note { position: absolute; bottom: 19%; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 7px 14px; color: #b1fff1; background: #092325d9; border: 1px solid #5ddcca55; }
+  #trial-entry { position: absolute; bottom: calc(19% - 49px); left: 50%; transform: translateX(-50%); min-height: 44px; color: var(--gold); white-space: nowrap; }
   .overlay { display: grid; place-items: center; z-index: 4; padding: 18px; background: #05060bc7; overflow-y: auto; }
   .sheet { width: min(540px, 100%); background: linear-gradient(145deg, #1a1718, #0e1016 75%); border: 1px solid #ba956674; box-shadow: 0 0 0 5px #09090cc2, 0 26px 100px #000b; padding: clamp(18px, 3vw, 39px); }
   .sheet.wide { width: min(850px, 100%); }
@@ -219,6 +227,7 @@
   #joystick.active #joystick-thumb { border-color: var(--cyan); }
   .touch-mode .xp { bottom: calc(7px + env(safe-area-inset-bottom)); left: var(--hud-left); right: var(--hud-right); }
   .touch-mode #portal-note { top: calc(var(--hud-top) + 74px); bottom: auto; padding: 5px 7px; font-size: 11px; }
+  .touch-mode #trial-entry { top: calc(var(--hud-top) + 107px); bottom: auto; padding: 6px 10px; font-size: 12px; }
   .touch-mode .overlay {
     padding: calc(12px + env(safe-area-inset-top)) var(--hud-right) calc(12px + env(safe-area-inset-bottom)) var(--hud-left);
     overscroll-behavior: contain;
@@ -299,6 +308,13 @@
     <h1 id="title">深渊回响</h1>
     <div class="subtitle" lang="en">ABYSS ECHO</div>
     <p class="premise">深入四重地牢，夺取祝福，击败守门首领。</p>
+    <label class="spell-picker"><span>开局法印</span>
+      <select id="arcana">
+        <option value="thunder">雷鸣 · 雷涌跃击</option>
+        <option value="ember">余烬 · 灼烧与焰环</option>
+        <option value="frost">霜锋 · 减速与广域霜环</option>
+      </select>
+    </label>
     <button class="primary" id="start">进入深渊 <small aria-hidden="true">↗</small></button>
     <p class="title-best" id="title-best" hidden></p>
     <p class="title-best" id="startup-error" role="alert" hidden></p>
@@ -308,10 +324,10 @@
       <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</span>
       <span><kbd>左键</kbd> 射击</span>
       <span><kbd>空格</kbd> 冲刺</span>
-      <span><kbd>Q</kbd> 新星</span>
+      <span><kbd>Q</kbd> 法印技</span>
     </div>
     <div class="touch-guide">拖动摇杆移动，自动瞄准射击</div>
-    <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.0</div>
+    <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.1</div>
   </footer>
 </main>
 
@@ -346,7 +362,7 @@
     <div class="bar" aria-hidden="true"><i class="trail" id="health-trail"></i><i id="health-fill"></i></div>
     <div class="skills">
       <button type="button" class="skill" id="dash-button"><kbd>空格</kbd>冲刺<em id="dash-text">就绪</em><i id="dash-fill"></i></button>
-      <button type="button" class="skill" id="nova-button"><kbd>Q</kbd>新星<em id="nova-text">就绪</em><i id="nova-fill"></i></button>
+      <button type="button" class="skill" id="nova-button"><kbd>Q</kbd><span id="nova-name">雷涌</span><em id="nova-text">就绪</em><i id="nova-fill"></i></button>
     </div>
   </div>
   <div class="hud-corner hud-actions">
@@ -358,6 +374,7 @@
   <div id="crosshair" aria-hidden="true" hidden></div>
   <div id="banner" aria-live="polite"><strong></strong><span></span></div>
   <div id="portal-note" hidden>踏入传送门，继续深入</div>
+  <button class="text-button" id="trial-entry" hidden>挑战精英 · 额外祝福</button>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -383,6 +400,14 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const polar = (angle, r) => [Math.cos(angle) * r, Math.sin(angle) * r];
 const pad = n => String(n).padStart(2, '0');
 const timeText = t => `${pad(Math.floor(t / 60))}:${pad(Math.floor(t % 60))}`;
+const arcana = {
+  thunder: { name: '雷鸣', nova: '雷涌', color: 0xc4bbff, radius: 1, power: 1 },
+  ember: { name: '余烬', nova: '焰环', color: 0xffad64, radius: .96, power: 1.15 },
+  frost: { name: '霜锋', nova: '霜环', color: 0x8ee9ff, radius: 1.16, power: .89 }
+};
+const fusionNames = { ember: { frost: '霜火碎裂', thunder: '雷火爆燃' }, frost: { thunder: '电霜' } };
+const fusionName = (a, b) => fusionNames[a]?.[b] ?? fusionNames[b]?.[a];
+const blessingElements = { frost: 'frost', burn: 'ember', chain: 'thunder' };
 const zones = [
   { name: '腐朽地窖', boss: '锈冠典狱长', fog: 0x160f12, stone: '#282326', mortar: '#0e0c10', wall: '#292322', fire: 0xff813a, light: 0xff954e, accent: 0xd08855, sky: 0xd2a5a9, pattern: 'rust' },
   { name: '翡翠墓穴', boss: '翡翠织骸者', fog: 0x091915, stone: '#1a2924', mortar: '#08120f', wall: '#233229', fire: 0x74ff96, light: 0x75f8b2, accent: 0x74cb9b, sky: 0x96dbb2, pattern: 'moss' },
@@ -1150,7 +1175,7 @@ function floatNumber(x, y, z, amount, type = '') {
   if (!options.numbers || numberList.length >= caps.numbers || (!type && numberList.length > 22)) return;
   const el = document.createElement('span');
   el.className = `number ${type}`;
-  el.textContent = type === 'heal' ? `+${Math.ceil(amount)}` : String(Math.max(1, Math.round(amount)));
+  el.textContent = type === 'reaction' ? amount : type === 'heal' ? `+${Math.ceil(amount)}` : String(Math.max(1, Math.round(amount)));
   dom.floaters.append(el);
   numberList.push({ x: x + random(-.54, .54), y, z: z + random(-.28, .28), t: -random(0, .055), el });
 }
@@ -1285,8 +1310,10 @@ function newRun() {
   run = {
     floor: 1, wave: 0, waveCount: 2, delay: 0, alive: 0, spawn: [], spawnDelay: 0, boss: null,
     kills: 0, damage: 0, seconds: 0, build: new Map(), pending: [], choices: [],
-    rerolls: 3, revives: 0, phase: 'entry'
+    rerolls: 3, revives: 0, phase: 'entry', element: dom.arcana.value || 'thunder'
   };
+  materials.bullet.color.setHex(arcana[run.element].color);
+  textIf(dom['nova-name'], arcana[run.element].nova);
   rebuildStats();
   hold = shake = hurt = 0;
   input.auto = touch.enabled;
@@ -1320,6 +1347,7 @@ function openFloor(floor) {
   run.spawn = [];
   run.boss = null;
   run.alive = 0;
+  run.trialDone = false;
   run.phase = 'entry';
   run.zoneIndex = Math.min(3, Math.floor((floor - 1) / 5));
   player.root.position.set(0, 0, 3.2);
@@ -1330,6 +1358,7 @@ function openFloor(floor) {
   if (floor > 1) healPlayer(12 + player.maxHP * .04, false);
   view.x = 0; view.z = 3.2;
   aim.x = 0; aim.z = -1;
+  dom['trial-entry'].hidden = true;
   buildRoom(run.zoneIndex, floor);
   updateCamera(1);
   updateHUD(1);
@@ -1365,10 +1394,11 @@ function spawnPoint() {
   }
   return [p.x > 0 ? -18 : 18, p.z > 0 ? -13 : 13];
 }
-function spawnEnemy(kind, x, z, minion = false) {
+function spawnEnemy(kind, x, z, minion = false, forceElite = false) {
   if (mobList.length >= caps.enemies) return null;
   const data = enemies[kind], isBoss = kind === 'boss';
-  const elite = !minion && !isBoss && run.floor >= 6 && Math.random() < Math.min(.20, .09 + .006 * (run.floor - 6));
+  const elite = !minion && !isBoss && (forceElite ||
+    (run.floor >= 6 && Math.random() < Math.min(.20, .09 + .006 * (run.floor - 6))));
   const hp = Math.round(data.hp * (isBoss ? [3.65, 8.25, 21.5, 46.8][run.zoneIndex] : 1 + .072 * (run.floor - 1)) * (elite ? 2.6 : minion ? .72 : 1));
   const model = makeEnemy(kind, elite, run.zoneIndex);
   const scale = elite ? 1.3 : isBoss ? 1.28 : 1;
@@ -1379,7 +1409,7 @@ function spawnEnemy(kind, x, z, minion = false) {
     speed: data.speed * (1 + .013 * (run.floor - 1)) * (elite ? 1.10 : 1),
     damage: data.damage * (1 + .028 * (run.floor - 1)) * (elite ? 1.22 : 1),
     timer: random(.5, 1.75), state: 'hunt', move: -1, dead: false, enrage: false, action: 0,
-    phase: random(0, TAU), flash: 0, slow: 0, burn: 0, burnTick: 0, bladeTime: 0,
+    phase: random(0, TAU), flash: 0, slow: 0, burn: 0, burnTick: 0, charge: 0, bladeTime: 0,
     dx: 0, dz: -1, turn: Math.random() < .5 ? -1 : 1, spawnTime: .33, fx: null, summoned: minion
   };
   mobList.push(e);
@@ -1388,13 +1418,30 @@ function spawnEnemy(kind, x, z, minion = false) {
   shock(x, z, e.r * 1.65, zone.fire, .41);
   return e;
 }
-function finishFloor() {
+function finishFloor(reason = 'clear') {
   run.phase = 'cleared';
   for (const b of hostile) b.life = 0;
   for (const d of drops) d.pull = true;
-  run.pending.push('clear');
+  run.pending.push(reason);
   sound('portal');
-  announce('地牢已肃清', `第 ${run.floor} 层完成`);
+  if (reason === 'trial') announce('试炼完成', '领取额外祝福');
+  else announce('地牢已肃清', `第 ${run.floor} 层完成`);
+}
+function startTrial() {
+  if (mode !== 'play' || run.phase !== 'portal' || run.trialDone || run.floor % 5 !== 2) return;
+  run.phase = 'trial';
+  run.trialDone = true;
+  portal.root.visible = false;
+  dom['portal-note'].hidden = true;
+  dom['trial-entry'].hidden = true;
+  const kinds = ['charger', 'shooter', 'stalker', 'bomber', 'stalker'];
+  kinds.forEach((kind, index) => {
+    const [x, z] = spawnPoint();
+    spawnEnemy(kind, x, z, false, index === 0);
+  });
+  announce('权柄试炼', '击败精英与随从，领取额外祝福');
+  updateHUD(0);
+  sound('boss');
 }
 function makePortal() {
   const root = new THREE.Group(), swirl = new THREE.Group();
@@ -1415,11 +1462,18 @@ function makePortal() {
   const axis = mesh(swirl, 'gem', cyan, 0, 1.05, 0, .44, .98, .44);
   const arch = mesh(root, 'torus', dim, 0, 1.22, 0, .98, 1.28, .70);
   portal = { root, swirl, axis, arch, materials: [cyan, dim, halo, floorGlow], age: 0, outside: false };
+  revealPortal();
+}
+function revealPortal() {
   run.phase = 'portal';
+  portal.root.visible = true;
+  portal.age = 0;
+  portal.outside = false;
   dom['portal-note'].textContent = run.floor === 20 ? '踏入传送门，返回地表' : '踏入传送门，继续深入';
   dom['portal-note'].hidden = false;
+  dom['trial-entry'].hidden = run.trialDone || run.floor % 5 !== 2;
   sound('portal');
-  shock(root.position.x, root.position.z, 3.2, 0x7dfbe0, .75);
+  shock(portal.root.position.x, portal.root.position.z, 3.2, 0x7dfbe0, .75);
 }
 function updateFloor(dt) {
   if (run.phase === 'entry' || run.phase === 'rest') {
@@ -1441,7 +1495,14 @@ function updateFloor(dt) {
     }
     return;
   }
-  if (run.phase === 'cleared' && run.pending.length === 0 && drops.length === 0) makePortal();
+  if (run.phase === 'trial') {
+    if (!run.alive) finishFloor('trial');
+    return;
+  }
+  if (run.phase === 'cleared' && run.pending.length === 0 && drops.length === 0) {
+    if (portal) revealPortal();
+    else makePortal();
+  }
   if (portal && run.phase === 'portal') {
     portal.age += dt;
     const within = distance(portal.root.position, player.root.position) < 1.32;
@@ -1683,20 +1744,78 @@ function updateBlades(dt) {
 }
 function castNova(rebirth) {
   const p = player.root.position, s = player.stats;
+  const spell = arcana[run.element];
   if (!rebirth) player.novaCD = s.novaCD;
-  const r = rebirth ? 12.8 : s.novaR;
-  const amount = rebirth ? s.novaHit * 2.45 : s.novaHit;
-  const color = rebirth ? 0xffb34c : 0x72e8f8;
+  const r = rebirth ? 12.8 : s.novaR * spell.radius;
+  const amount = s.novaHit * (rebirth ? 2.45 : spell.power);
+  const color = rebirth ? 0xffb34c : spell.color;
   for (let i = 0; i < 3; i++) shock(p.x, p.z, r * (1 - i * .12), color, .55 + i * .11, .6 + i * .42);
   sparks(p.x, .65, p.z, color, 56, 8.4, .37, .62);
   impact(.046, .44);
   sound('nova');
-  for (const e of mobList) if (!e.dead && distance(p, e.root.position) <= r + e.r) damageEnemy(e, amount, 'nova');
+  for (const e of mobList) {
+    if (e.dead || distance(p, e.root.position) > r + e.r) continue;
+    const extra = rebirth ? 0 : reactToNova(e, run.element, amount);
+    if (!rebirth) markElement(e, run.element);
+    damageEnemy(e, amount + extra, 'nova');
+  }
+  if (!rebirth && run.element === 'thunder') {
+    const outer = mobList.filter(e => {
+      const d = distance(p, e.root.position) - e.r;
+      return !e.dead && d > r && d <= r + 3;
+    }).sort((a, b) => distance(p, a.root.position) - distance(p, b.root.position)).slice(0, 2);
+    for (const e of outer) {
+      const pos = e.root.position;
+      lightning(p.x, p.z, pos.x, pos.z);
+      const extra = reactToNova(e, 'thunder', amount * .48);
+      markElement(e, 'thunder');
+      damageEnemy(e, amount * .48 + extra, 'nova');
+    }
+  }
   for (const b of hostile) {
     if (b.life <= 0 || squared(p.x - b.x, p.z - b.z) > r * r) continue;
     b.life = 0;
     sparks(b.x, .76, b.z, color, 3, 2, .15, .27);
   }
+}
+function markElement(e, element) {
+  if (element === 'ember') e.burn = Math.max(e.burn, 2.4);
+  else if (element === 'frost') e.slow = Math.max(e.slow, 1.2);
+  else if (element === 'thunder') e.charge = 2.4;
+}
+function reactToNova(e, element, power) {
+  const other = [
+    ['frost', e.slow], ['ember', e.burn], ['thunder', e.charge]
+  ].find(([key, time]) => key !== element && time > 0)?.[0];
+  if (!other) return 0;
+  const pos = e.root.position;
+  const has = key => element === key || other === key;
+  const name = fusionName(element, other);
+  let color, multiplier;
+  if (has('ember') && has('frost')) {
+    color = 0xffdbbd; multiplier = .34;
+    let remaining = 3;
+    for (const target of mobList) {
+      if (target === e || target.dead || distance(pos, target.root.position) > 2.6 + target.r) continue;
+      damageEnemy(target, power * .26, 'reaction');
+      if (--remaining === 0) break;
+    }
+  } else if (has('frost')) {
+    color = 0xa9b8ff; multiplier = .30;
+    e.slow = Math.max(e.slow, 2.7);
+    const target = mobList.find(target => target !== e && !target.dead && distance(pos, target.root.position) < 4.8);
+    if (target) {
+      lightning(pos.x, pos.z, target.root.position.x, target.root.position.z);
+      damageEnemy(target, power * .35, 'reaction');
+    }
+  } else {
+    color = 0xffa05f; multiplier = .50;
+    e.burn = Math.max(e.burn, 3.6);
+  }
+  shock(pos.x, pos.z, 2.5, color, .36);
+  sparks(pos.x, 1.15, pos.z, color, 13, 4, .23, .48);
+  floatNumber(pos.x, e.kind === 'boss' ? 3.85 : 1.85, pos.z, name, 'reaction');
+  return power * multiplier;
 }
 
 function shoot() {
@@ -1715,7 +1834,7 @@ function shoot() {
     for (let i = 0; i < count; i++) launchBolt(p.x, p.z, center + i * TAU / count, .72);
     shock(p.x, p.z, 2.2, 0x90e9ff, .26);
   }
-  sparks(x, 1.08, z, 0x8bffe8, 4, 1.4, .25, .16);
+  sparks(x, 1.08, z, arcana[run.element].color, 4, 1.4, .25, .16);
   sound('shoot');
 }
 function launchBolt(x, z, angle, scale) {
@@ -1833,17 +1952,21 @@ function damageEnemy(e, amount, source, critical = false) {
   const { x, z } = e.root.position;
   if (source !== 'burn' || dealt >= 5) floatNumber(x, (e.kind === 'boss' ? 3.25 : 1.3) + e.model.position.y, z, dealt, critical ? 'critical' : '');
   if (source === 'bolt') {
-    const color = critical ? 0xffc651 : 0x98fae2;
+    const color = critical ? 0xffc651 : arcana[run.element].color;
     sparks(x, e.kind === 'boss' ? 1.52 : .92, z, color, critical ? 12 : 5, critical ? 4.7 : 2.6, .22);
     impact(critical ? .038 : .020, critical ? .13 : .048);
     sound('hit', x);
-    if (bonus('frost')) e.slow = 1.38;
-    if (bonus('burn')) e.burn = 3;
+    markElement(e, run.element);
+    if (bonus('frost')) e.slow = Math.max(e.slow, 1.38);
+    if (bonus('burn')) e.burn = Math.max(e.burn, 3);
     if (player.stats.leech) healPlayer(dealt * player.stats.leech, false);
   }
   if (e.hp <= 0) killEnemy(e);
   else if (e.kind === 'boss' && !e.enrage && e.hp <= e.maxHP * .5) enrageBoss(e);
-  if (source === 'bolt' && bonus('chain') && Math.random() < .19 + .095 * bonus('chain')) chainAttack(e, amount);
+  if (source === 'bolt' && bonus('chain') && Math.random() < .19 + .095 * bonus('chain')) {
+    markElement(e, 'thunder');
+    chainAttack(e, amount);
+  }
 }
 function chainAttack(origin, damage) {
   const visited = new Set([origin]);
@@ -1858,6 +1981,7 @@ function chainAttack(origin, damage) {
     if (!bestTarget) break;
     const p = bestTarget.root.position;
     lightning(from.x, from.z, p.x, p.z);
+    markElement(bestTarget, 'thunder');
     damageEnemy(bestTarget, damage * .57, 'chain');
     visited.add(bestTarget);
     from = p;
@@ -1936,13 +2060,14 @@ function updateEnemy(e, dt) {
   e.flash = Math.max(0, e.flash - dt);
   e.bladeTime = Math.max(0, e.bladeTime - dt);
   e.slow = Math.max(0, e.slow - dt);
+  e.charge = Math.max(0, e.charge - dt);
   if (e.burn > 0) {
     e.burn -= dt;
     e.burnTick -= dt;
     if (e.burnTick <= 0) {
       e.burnTick += .30;
       sparks(e.root.position.x, 1.05, e.root.position.z, 0xff7f37, 2, 2, .18, .32);
-      damageEnemy(e, 2.4 * bonus('burn'), 'burn');
+      damageEnemy(e, Math.max(1.2, 2.4 * bonus('burn')), 'burn');
       if (e.dead) return;
     }
   } else e.burnTick = 0;
@@ -2182,7 +2307,8 @@ function updateHUD(dt) {
   textIf(dom.damage, Math.round(run.damage).toLocaleString('zh-CN'));
   textIf(dom['floor-number'], `${pad(run.floor)} / 20`);
   textIf(dom['zone-name'], zone.name);
-  textIf(dom['wave-text'], run.phase === 'portal' ? '传送门已开启' : run.phase === 'cleared' ? '已清空' :
+  textIf(dom['wave-text'], run.phase === 'trial' ? `权柄试炼 · 剩余 ${run.alive}` :
+    run.phase === 'portal' ? '传送门已开启' : run.phase === 'cleared' ? '已清空' :
     run.wave === 0 ? '敌人接近中' : `第 ${run.wave} / ${run.waveCount} 波 · 剩余 ${run.alive + run.spawn.length}`);
   textIf(dom.level, `等级 ${player.level}`);
   textIf(dom['health-text'], `${Math.ceil(player.hp)} / ${player.maxHP}`);
@@ -2240,7 +2366,7 @@ function drawMap() {
     mapCtx.fillStyle = e.elite ? '#efc168' : '#ef775b';
     mapCtx.fill();
   }
-  if (portal) {
+  if (portal?.root.visible) {
     const p = portal.root.position;
     mapCtx.strokeStyle = '#80e2cf'; mapCtx.lineWidth = 2;
     mapCtx.strokeRect(sx(p.x) - 6, sz(p.z) - 6, 12, 12);
@@ -2294,7 +2420,9 @@ function modalAction(label, action, kind = 'text-button') {
   return button;
 }
 function chooseOptions(exclude = []) {
-  const available = blessings.filter(b => bonus(b.id) < b.limit);
+  const eligible = blessings.filter(b => bonus(b.id) < b.limit);
+  const higherTier = run.blessingReason === 'trial' ? eligible.filter(b => b.tier >= 2) : [];
+  const available = higherTier.length ? higherTier : eligible;
   const drawn = [];
   for (let i = 0; i < 3 && available.length; i++) {
     const pool = available.filter(b => !exclude.includes(b.id));
@@ -2320,17 +2448,21 @@ function openBlessing(reason) {
 }
 function renderBlessings() {
   const levelUp = run.blessingReason === 'level';
-  showModal('选择祝福', levelUp ? `灵魂升华 · 当前等级 ${player.level}` : `第 ${run.floor} 层已肃清 · 领取清层祝福`, true);
+  const description = run.blessingReason === 'trial' ? '权柄试炼完成 · 领取额外祝福' :
+    levelUp ? `灵魂升华 · 当前等级 ${player.level}` : `第 ${run.floor} 层已肃清 · 领取清层祝福`;
+  showModal('选择祝福', description, true);
   const cards = document.createElement('div');
   cards.id = 'cards';
   run.choices.forEach((b, i) => {
     const rarity = rarities[b.tier], count = bonus(b.id);
+    const fusion = fusionName(run.element, blessingElements[b.id]);
+    const hint = fusion ? ` ${arcana[run.element].nova}可触发${fusion}。` : '';
     const card = document.createElement('button');
     card.className = 'card';
     card.style.setProperty('--rarity', rarity.color);
     card.innerHTML = `<span class="card-top"><span>${rarity.name}</span><kbd>${i + 1}</kbd></span>
       <span class="card-rune" aria-hidden="true">${b.rune}</span><strong>${b.name}</strong>
-      <span class="card-description">${b.description}</span><span class="owned">已拥有 ${count} / ${b.limit}</span>`;
+      <span class="card-description">${b.description}${hint}</span><span class="owned">已拥有 ${count} / ${b.limit}</span>`;
     card.addEventListener('click', () => takeBlessing(i));
     cards.append(card);
   });
@@ -2394,12 +2526,14 @@ function openOptions(returnTo) {
   const controls = touch.enabled ? `
       <div><dt>移动</dt><dd>拖动左下摇杆</dd></div>
       <div><dt>射击</dt><dd>默认自动瞄准，也可按住战场瞄准射击</dd></div>
-      <div><dt>冲刺与新星</dt><dd>点按右下技能</dd></div>
+      <div><dt>冲刺与法印技</dt><dd>点按右下技能</dd></div>
+      <div><dt>元素融合</dt><dd>先用祝福附上异元素，再释放法印技</dd></div>
       <div><dt>祝福与重掷</dt><dd>点按卡牌或重掷按钮</dd></div>` : `
       <div><dt>移动</dt><dd>W A S D / 方向键</dd></div>
       <div><dt>瞄准与连发</dt><dd>移动鼠标 / 按住左键</dd></div>
       <div><dt>冲刺与短暂无敌</dt><dd>空格 / Shift</dd></div>
-      <div><dt>新星清除周围弹幕</dt><dd>Q / 鼠标右键</dd></div>
+      <div><dt>法印技清除周围弹幕</dt><dd>Q / 鼠标右键</dd></div>
+      <div><dt>元素融合</dt><dd>先用祝福附上异元素，再释放法印技</dd></div>
       <div><dt>自动瞄准射击 / 暂停</dt><dd>F / Esc</dd></div>
       <div><dt>选择祝福 / 重掷</dt><dd>1 2 3 / R</dd></div>`;
   dom['sheet-content'].innerHTML = `
@@ -2548,6 +2682,7 @@ function bindInput() {
   dom.start.addEventListener('click', newRun);
   dom['title-options'].addEventListener('click', () => openOptions('title'));
   dom.pause.addEventListener('click', openPause);
+  dom['trial-entry'].addEventListener('click', startTrial);
   dom['auto-fire'].addEventListener('click', toggleAuto);
   dom.arena.addEventListener('contextmenu', e => e.preventDefault());
   dom.arena.addEventListener('mousedown', e => {
@@ -2637,7 +2772,7 @@ function animateWorld(dt, visualTime, title) {
     player.cape.rotation.x = -.24 + Math.sin(visualTime * 4) * .07;
     if (Math.random() < dt * 15) sparks(random(3.5,10.5), random(.3,5.6), random(-6.5,-4.2), 0x64dfe6, 1, .67, .24, 1.2);
   }
-  if (portal) {
+  if (portal?.root.visible) {
     portal.swirl.rotation.y = visualTime * 1.75;
     portal.axis.position.y = 1.05 + Math.sin(visualTime * 4) * .17;
     portal.arch.rotation.y = visualTime * .76;
