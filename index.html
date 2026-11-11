@@ -5,18 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="深渊回响，一款可离线游玩的 3D 动作肉鸽游戏。">
-<title>深渊回响 2.1.1 · Abyss Echo</title>
+<title>深渊回响 2.2.0 · Abyss Echo</title>
 <link rel="icon" href="data:,">
 <style>
   :root {
-    --ink: #08090b;
-    --panel: #101115;
-    --text: #eae2d3;
-    --muted: #aba59a;
-    --gold: #e3b777;
+    --ink: #1b141d;
+    --panel: #2a1f2b;
+    --text: #fff3e6;
+    --muted: #c3b0bd;
+    --gold: #ffd98a;
     --gold-dim: #806745;
-    --cyan: #79e5e4;
-    --line: #d9bd842e;
+    --cyan: #8fe8dc;
+    --line: #ffffff2e;
+    --pink: #ff9ec4;
+    --cream: #fff7ec;
+    --panel-grad: linear-gradient(180deg, #352937f4, #231a28f4);
+    --r-sm: 10px;
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-pill: 999px;
     --serif: "STSong", "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
     --sans: "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
     --mono: "Consolas", "SFMono-Regular", monospace;
@@ -102,7 +109,15 @@
   .floor h2 { margin: 4px 0 2px; font: 700 clamp(19px, 2.2vw, 32px) var(--serif); letter-spacing: .16em; }
   #wave-text { color: #c9c0ae; font-size: 12px; letter-spacing: .14em; }
   #modifier-list { color: var(--text); margin: 5px auto 0; padding: 3px 7px; border: 1px solid var(--line); background: #101115cc; font-size: 11px; }
+  #relic-bar, #route-pips { margin-top: 7px; color: var(--gold); font-size: 11px; line-height: 1.5; }
+  #vault-entry { position: absolute; left: 50%; bottom: calc(19% + 47px); transform: translateX(-50%); min-height: 44px; pointer-events: auto; }
+  #guard-button:disabled, #barrage-button:disabled { opacity: .55; }
+  #continue-run, #altar-entry { min-height: 44px; margin-top: 8px; }
+  #save-note { position: absolute; bottom: 106px; left: 50%; translate: -50% 0; font-size: 12px; color: var(--cyan); }
+  .altar-items { display: grid; gap: 9px; }
+  .altar-items button { min-height: 44px; }
   #arena.mist::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 16vmin #281238a0; }
+  #arena.curtain::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse, transparent 23%, #281631ed 100%); }
   #boss-hud { position: absolute; left: 50%; top: 117px; transform: translateX(-50%); width: min(410px, 47vw); text-align: center; }
   #boss-name { color: #ffca9d; font-weight: 700; letter-spacing: .15em; text-shadow: 0 2px 5px #000; }
   #boss-move { display: block; color: #e7bd94; margin-top: 5px; font-size: 11px; letter-spacing: .09em; min-height: 16px; }
@@ -229,6 +244,7 @@
   #joystick.active #joystick-thumb { border-color: var(--cyan); }
   .touch-mode .xp { bottom: calc(7px + env(safe-area-inset-bottom)); left: var(--hud-left); right: var(--hud-right); }
   .touch-mode #portal-note { top: calc(var(--hud-top) + 74px); bottom: auto; padding: 5px 7px; font-size: 11px; }
+  .touch-mode #vault-entry { top: calc(var(--hud-top) + 106px); bottom: auto; }
   .touch-mode #trial-entry { top: calc(var(--hud-top) + 107px); bottom: auto; padding: 6px 10px; font-size: 12px; }
   .touch-mode .overlay {
     padding: calc(12px + env(safe-area-inset-top)) var(--hud-right) calc(12px + env(safe-area-inset-bottom)) var(--hud-left);
@@ -295,6 +311,35 @@
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     @keyframes banner { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
   }
+  .sheet, .map-box { border-radius: var(--r-md); background: var(--panel-grad); border-color: var(--line); }
+  .sheet { box-shadow: 0 14px 45px #1a101e99, inset 0 1px #ffedf921; }
+  .text-button, .primary, .skill, .bar, .bar i, #modifier-list { border-radius: var(--r-pill); }
+  .text-button, .skill { background: linear-gradient(180deg, #403046ed, #251d2df4); border-color: var(--line); }
+  .text-button:hover, .skill:not(:disabled):hover { border-color: var(--pink); }
+  .title-content h1 { font-family: var(--sans); letter-spacing: -.03em; }
+  .title-content .primary { border-color: var(--pink); color: #3e253b; background: linear-gradient(125deg, #ffe3d1, #ffc4dd); }
+  .title-content .spell-picker select { border-radius: var(--r-sm); }
+  .card { border-radius: var(--r-md); background: var(--panel-grad); border-top: 3px solid var(--rarity); }
+  .card-rune { border-radius: 50%; background: var(--cream); color: #543a51; box-shadow: none; }
+  .build-icon { border-radius: 7px; background: #2a1e2ee8; }
+  #health-fill { background: linear-gradient(90deg, #e57d9f, #ffb98a); }
+  #xp-fill { background: linear-gradient(90deg, #8fc7ff, #7fe0c3); }
+  #hurt { box-shadow: inset 0 0 16vmin #f788b2a8; }
+  #relic-bar { overflow-wrap: anywhere; }
+  @media (min-width: 768px) {
+    body:not(.touch-mode) .vitals { width: min(532px, 57vw); }
+    body:not(.touch-mode) .skills { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 767px) and (orientation: portrait) {
+    #cards { grid-template-columns: 1fr; }
+    .title-content .premise { margin-block: 13px; }
+    .touch-mode #save-note { bottom: calc(var(--hud-bottom) + 132px); }
+  }
+  @media (max-width: 767px) {
+    body:not(.touch-mode) .vitals { width: min(236px, 63vw); }
+    body:not(.touch-mode) .skill { white-space: nowrap; gap: 4px; }
+    body:not(.touch-mode) .skill kbd { min-width: 19px; padding-inline: 3px; }
+  }
 </style>
 </head>
 <body>
@@ -309,7 +354,7 @@
   <section class="title-content" aria-labelledby="title">
     <h1 id="title">深渊回响</h1>
     <div class="subtitle" lang="en">ABYSS ECHO</div>
-    <p class="premise">深入四重地牢，夺取祝福，击败守门首领。</p>
+    <p class="premise">深入八座地牢，用祝福和遗物构筑法术，揭开回响之源。</p>
     <label class="spell-picker"><span>开局法印</span>
       <select id="arcana">
         <option value="thunder">雷鸣 · 雷涌跃击</option>
@@ -318,6 +363,8 @@
       </select>
     </label>
     <button class="primary" id="start">进入深渊 <small aria-hidden="true">↗</small></button>
+    <button class="text-button" id="continue-run" aria-label="继续深渊" hidden>继续深渊</button>
+    <button class="text-button" id="altar-entry" aria-label="回响祭坛">回响祭坛</button>
     <p class="title-best" id="title-best" hidden></p>
     <p class="title-best" id="startup-error" role="alert" hidden></p>
   </section>
@@ -329,7 +376,7 @@
       <span><kbd>Q</kbd> 法印技</span>
     </div>
     <div class="touch-guide">拖动摇杆移动，自动瞄准射击</div>
-    <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.1.1</div>
+    <div class="floor-guide" id="floor-guide">20 层地牢 · 33 种祝福 · 2.2.0</div>
   </footer>
 </main>
 
@@ -344,6 +391,8 @@
   </div>
   <aside class="hud-corner build" id="build" aria-label="已获祝福" hidden>
     <div class="build-title">已获祝福</div><div id="build-items"></div>
+    <div id="route-pips" aria-label="回响路线进度"></div>
+    <div id="relic-bar" aria-label="已获遗物" hidden></div>
   </aside>
   <header class="floor">
     <small id="floor-number">01 / 20</small>
@@ -366,6 +415,8 @@
     <div class="skills">
       <button type="button" class="skill" id="dash-button"><kbd>空格</kbd>冲刺<em id="dash-text">就绪</em><i id="dash-fill"></i></button>
       <button type="button" class="skill" id="nova-button"><kbd>Q</kbd><span id="nova-name">雷涌</span><em id="nova-text">就绪</em><i id="nova-fill"></i></button>
+      <button type="button" class="skill" id="guard-button" aria-label="守护技" disabled><kbd>E</kbd>守护<em id="guard-text">第 3 层</em><i id="guard-fill"></i></button>
+      <button type="button" class="skill" id="barrage-button" aria-label="追猎技" disabled><kbd>V</kbd>追猎<em id="barrage-text">第 8 层</em><i id="barrage-fill"></i></button>
     </div>
   </div>
   <div class="hud-corner hud-actions">
@@ -377,7 +428,9 @@
   <div id="crosshair" aria-hidden="true" hidden></div>
   <div id="banner" aria-live="polite"><strong></strong><span></span></div>
   <div id="portal-note" hidden>踏入传送门，继续深入</div>
+  <div id="save-note" role="status" aria-live="polite" hidden></div>
   <button class="text-button" id="trial-entry" hidden>挑战精英 · 额外祝福</button>
+  <button class="text-button" id="vault-entry" aria-label="进入幽库" hidden>进入幽库 · 选择遗物</button>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -411,8 +464,10 @@ const arcana = {
 const fusionNames = { ember: { frost: '霜火碎裂', thunder: '雷火爆燃' }, frost: { thunder: '电霜' } };
 const fusionName = (a, b) => fusionNames[a]?.[b] ?? fusionNames[b]?.[a];
 const blessingElements = { frost: 'frost', burn: 'ember', chain: 'thunder' };
-const MAX_FLOOR = 20;
-const BOSS_HP_MULT = [3.65, 8.25, 21.5, 46.8];
+const MAX_FLOOR = 40;
+const BOSS_HP_MULT = [3.65, 8.25, 21.5, 46.8, 78, 118, 168, 228];
+const FINAL_BOSS_HP_MULT = 320;
+const FINAL_BOSS_NAME = '无貌歌者';
 const LAYOUTS = {
   court: { name: '开阔庭院', weight: 26, minFloor: 1, columns: [], crystals: [[-8,6],[8,6]] },
   pillars: { name: '柱阵', weight: 24, minFloor: 1, columns: [[-8,-6],[0,-6],[8,-6],[-8,6],[0,6],[8,6]], crystals: [] },
@@ -426,13 +481,32 @@ const MODIFIERS = {
   storm: { name: '雷暴', description: '每 14 秒，附近出现预警落雷。' },
   famine: { name: '饥荒', description: '灵魂增加 25%，治疗球掉率减半。' },
   overload: { name: '过载', description: '敌人伤害增加 12%。' },
-  fortune: { name: '福泽', description: '更容易选到史诗和传说祝福。' }
+  fortune: { name: '福泽', description: '更容易选到史诗和传说祝福。' },
+  pollen: { name: '花粉', description: '每秒恢复 1 点生命，视野边缘受花粉遮挡。' },
+  thornfield: { name: '荆棘地', description: '离开中央符文附近会受伤。' },
+  tide: { name: '急潮', description: '潮汐周期缩短 30%。' },
+  slick: { name: '湿滑', description: '冲刺距离增加 25%，移动停止后短暂滑行。' },
+  overheat: { name: '过热', description: '每 10 秒高温爆发，冷却区内安全。' },
+  gear: { name: '齿轮', description: '传送带速度翻倍。' },
+  spotlight: { name: '聚光灯', description: '剧场增加一束扫射灯光。' },
+  applause: { name: '掌声', description: '敌人死亡后，其他敌人短暂加速。' }
 };
+const BASE_MODIFIERS = ['mist','gale','storm','famine','overload','fortune'];
+const DEEP_FLOORS = [
+  ['温室入口','bloomer',2], ['孢林','bloomer',3,'pollen'], ['花蕊庭院','vine_lurker',4], ['藤蔓回廊','vine_lurker',5,'thornfield'], ['孢母寝宫','bloomer',4],
+  ['潮汐入口','jelly',3], ['沉没回廊','jelly',3,'slick'], ['珊瑚祭坛','coral',3], ['深潮之底','coral',2,'tide'], ['主教座堂','jelly',3],
+  ['工厂入口','mech',1], ['齿轮车间','steamer',2,'overheat'], ['熔炉核心','mech',2,'gear'], ['排汽管道','steamer',2], ['工头车间','steamer',2],
+  ['剧场入口','puppet',1], ['观众席','puppet',1,'applause'], ['帷幕之后','host',1], ['终幕彩排','host',2,'spotlight'], ['回响之源','puppet',2]
+].map(([name, enemy, intensity, modifier]) => ({ name, enemy, intensity, modifier }));
 const zones = [
-  { name: '腐朽地窖', boss: '锈冠典狱长', fog: 0x160f12, stone: '#282326', mortar: '#0e0c10', wall: '#292322', fire: 0xff813a, light: 0xff954e, accent: 0xd08855, sky: 0xd2a5a9, pattern: 'rust' },
-  { name: '翡翠墓穴', boss: '翡翠织骸者', fog: 0x091915, stone: '#1a2924', mortar: '#08120f', wall: '#233229', fire: 0x74ff96, light: 0x75f8b2, accent: 0x74cb9b, sky: 0x96dbb2, pattern: 'moss' },
-  { name: '熔火深渊', boss: '熔炉暴君', fog: 0x220d08, stone: '#35231f', mortar: '#170807', wall: '#36211b', fire: 0xff3b12, light: 0xff622c, accent: 0xff9c49, sky: 0xfeb08b, pattern: 'lava' },
-  { name: '虚空王座', boss: '无相之王', fog: 0x140c21, stone: '#26223a', mortar: '#0b0815', wall: '#2c2138', fire: 0xb76bff, light: 0xa374ff, accent: 0xc78aff, sky: 0xbab2fb, pattern: 'void' }
+  { name: '腐朽地窖', boss: '锈冠典狱长', fog: 0x241a22, stone: '#282326', mortar: '#0e0c10', wall: '#292322', fire: 0xffb08a, light: 0xffc9a8, accent: 0xffb6c9, sky: 0xd2a5a9, pattern: 'rust' },
+  { name: '翡翠墓穴', boss: '翡翠织骸者', fog: 0x14231f, stone: '#1a2924', mortar: '#08120f', wall: '#233229', fire: 0x8fe8c6, light: 0x9ff0d4, accent: 0x9fe0c4, sky: 0x96dbb2, pattern: 'moss' },
+  { name: '熔火深渊', boss: '熔炉暴君', fog: 0x2a1714, stone: '#35231f', mortar: '#170807', wall: '#36211b', fire: 0xff9f7a, light: 0xffb494, accent: 0xffc39a, sky: 0xfeb08b, pattern: 'lava' },
+  { name: '虚空王座', boss: '无相之王', fog: 0x1d1730, stone: '#26223a', mortar: '#0b0815', wall: '#2c2138', fire: 0xc9a8ff, light: 0xd6bcff, accent: 0xd7c2ff, sky: 0xbab2fb, pattern: 'void' },
+  { name: '星屑温室', boss: '孢母 · 缇娅', fog: 0x20332f, stone: '#34453e', mortar: '#202e27', wall: '#3c4e46', fire: 0xf8aad4, light: 0xffc1d9, accent: 0x99ebc6, sky: 0xbbebce, pattern: 'moss', terrain: 'vines', summons: ['bloomer','vine_lurker'], modifiers: ['pollen','thornfield'], hint: '藤蔓会封住通路。射击花蕊可以快速清障。' },
+  { name: '潮汐回廊', boss: '潮汐主教 · 涟', fog: 0x1d3046, stone: '#33465a', mortar: '#1c293b', wall: '#36495e', fire: 0x94e8f4, light: 0xaac9ff, accent: 0xa4eadf, sky: 0xc0dafa, pattern: 'void', terrain: 'tide', summons: ['jelly','coral'], modifiers: ['tide','slick'], hint: '水面变亮时即将涨潮。站在浅色浮台上躲开潮水。' },
+  { name: '熔核工厂', boss: '熔核工头 · 铆钉', fog: 0x35272d, stone: '#51423e', mortar: '#2a1d23', wall: '#554541', fire: 0xffad8c, light: 0xffc39a, accent: 0xffd194, sky: 0xeac3ba, pattern: 'lava', terrain: 'factory', summons: ['mech','steamer'], modifiers: ['overheat','gear'], hint: '传送带会推着你和敌人移动。避开蒸汽阀的地面预警。' },
+  { name: '梦魇剧场', boss: '报幕人 · 帷', fog: 0x30213e, stone: '#4a3857', mortar: '#201729', wall: '#54405f', fire: 0xe9b4fc, light: 0xfbc8ec, accent: 0xf6ccff, sky: 0xd6b9f6, pattern: 'void', terrain: 'theatre', summons: ['puppet','host'], modifiers: ['spotlight','applause'], hint: '避开扫过舞台的光束。观众投来的礼盒落地前会显示爆炸范围。' }
 ];
 const rarities = [
   { name: '普通', color: '#d3c7ad', weight: 52 },
@@ -465,8 +539,67 @@ const blessings = [
   ['storm', 3, '弹幕风暴', '风', '每第 4 轮射击向四周额外释放一圈弹幕。', 3],
   ['glass', 3, '玻璃大炮', '碎', '伤害提高 70%，最大生命减少 30%。', 2],
   ['phoenix', 3, '不死鸟', '羽', '死亡时复活一次，恢复生命并释放巨型新星。', 1],
-  ['giant', 3, '巨灵弹', '巨', '弹丸体积增大 45%，伤害提高 22%。', 3]
+  ['giant', 3, '巨灵弹', '巨', '弹丸体积增大 45%，伤害提高 22%。', 3],
+  ['pyre', 2, '焰爆', '爆', '燃烧中的敌人死亡时爆炸，波及附近敌人。', 3],
+  ['shard', 2, '霜棱', '棱', '每层对减速目标额外造成 6 点命中伤害。', 3],
+  ['coil', 2, '雷枢', '枢', '每 10 次命中触发一次雷击，叠加提高伤害。', 3],
+  ['rend', 1, '破甲', '破', '敌人受到的伤害每层提高 6%。', 5],
+  ['exec', 3, '处决', '决', '对低于四分之一生命的敌人，每层增伤 60%。', 2],
+  ['bloom', 1, '回春', '春', '每层使击杀恢复 2 点生命。', 5],
+  ['thorn', 2, '荆棘', '荆', '每层在受击时向周围敌人反弹 40% 伤害。', 3],
+  ['swift', 1, '疾影', '影', '冲刺后 1.2 秒内，射速每层提高 30%。', 5]
 ].map(([id, tier, name, rune, description, limit]) => ({ id, tier, name, rune, description, limit }));
+const RELIC_TAGS = { ember: '焰', frost: '霜', thunder: '雷', edge: '锋' };
+const RELICS = [
+  ['r_ember_heart','余烬之心','ember',1,'命中有 12% 概率点燃。'],
+  ['r_ember_bone','焦骨护符','ember',2,'燃烧的敌人死亡时发生焰爆。'],
+  ['r_ember_core','熔核','ember',1,'伤害 +10%，法印范围 +15%。'],
+  ['r_ember_keep','不熄','ember',3,'燃烧延长 1.5 秒，伤害 +50%。'],
+  ['r_frost_mirror','霜镜','frost',1,'命中有 12% 概率使敌人减速。'],
+  ['r_frost_shell','冰壳','frost',2,'受伤时减速近身敌人，冷却 6 秒。'],
+  ['r_frost_core','极寒核心','frost',1,'对减速目标伤害 +18%。'],
+  ['r_frost_shatter','碎冰','frost',3,'击杀减速目标时触发冰爆。'],
+  ['r_thunder_hub','雷枢','thunder',1,'每 8 次命中触发雷链。'],
+  ['r_thunder_bead','霆珠','thunder',1,'弹丸有 15% 概率多弹射一次。'],
+  ['r_thunder_ring','蓄能环','thunder',2,'移动 6 单位后，下次攻击伤害 +40%。'],
+  ['r_thunder_etch','电蚀','thunder',2,'雷击使敌人受伤 +12%，持续 3 秒。'],
+  ['r_edge_whet','砺刃','edge',0,'伤害 +12%。'],
+  ['r_edge_pierce','破甲刺','edge',1,'穿透 +1，每次穿透后该弹伤害减少 15%。'],
+  ['r_edge_hunter','猎心镜','edge',1,'暴击率 +6%，暴击倍率 +0.20。'],
+  ['r_edge_gale','疾风刃','edge',0,'射速 +12%，移速 +6%。'],
+  ['r_spore','暖孢灯','ember',2,'燃烧伤害 +20%。',21],
+  ['r_vine','柔藤护符','edge',1,'最大生命 +20。',21],
+  ['r_pearl','潮生珠','frost',2,'每秒恢复 0.8 点生命。',26],
+  ['r_current','涌流瓶','thunder',2,'弹速 +15%。',26],
+  ['r_coal','恒热炉芯','ember',2,'法印技伤害 +20%。',31],
+  ['r_gear','逆齿徽章','edge',2,'冲刺冷却 −12%。',31],
+  ['r_mask','星帷面具','frost',2,'承伤 −8%。',36],
+  ['r_bell','返场银铃','thunder',3,'射速 +16%。',36]
+].map(([id,name,tag,tier,description,floor]) => ({ id,name,tag,tier,description,floor }));
+const ROUTES = {
+  edge: 'force haste stride crit reach pierce multishot giant bounce rend exec'.split(' '),
+  frost: 'frost nova armor vigor regen shard thorn bloom'.split(' '),
+  thunder: 'chain storm homing corpse swift coil pyre magnet burn'.split(' ')
+};
+const AWAKENINGS = [
+  { id: 'aw_ruin', name: '破灭', description: '伤害 +35%，最大生命 −20%。' },
+  { id: 'aw_bulwark', name: '壁垒', description: '最大生命 +60，受伤 −12%。' },
+  { id: 'aw_swarm', name: '群星', description: '每轮额外发射 1 枚全伤弹丸。', needs: 'multishot' },
+  { id: 'aw_tempo', name: '疾奏', description: '射速 +30%，弹速 +15%。' },
+  { id: 'aw_frostbite', name: '霜噬', description: '命中必定减速，对减速目标增伤 25%。', needs: 'frost' },
+  { id: 'aw_overload', name: '过载', description: '法印冷却 −35%，范围 +25%。', needs: 'nova' },
+  { id: 'aw_revenant', name: '亡语', description: '每层首次倒下恢复 40% 生命。' }
+];
+const SKILLS = {
+  guard: { floor: 3, cd: 16, name: '守护', choices: [
+    { id: 'guard_shield', name: '回响壁垒', description: '获得 45 点护盾，3 秒内减伤并清除近身弹幕。' },
+    { id: 'guard_phase', name: '相位闪避', description: '无敌 1.2 秒，移速增加 40%。' }
+  ] },
+  barrage: { floor: 8, cd: 20, name: '追猎', choices: [
+    { id: 'hunt_volley', name: '弹幕齐射', description: '在 0.35 秒内发射 9 枚扇形弹丸。' },
+    { id: 'hunt_blades', name: '灵刃归位', description: '召唤 4 把环绕灵刃，持续 10 秒。' }
+  ] }
+};
 const enemies = {
   stalker: { name: '荆背追猎者', hp: 28, speed: 3.45, radius: .64, color: 0xf66544, xp: 4, damage: 10 },
   shooter: { name: '悬棺射手', hp: 31, speed: 2.9, radius: .68, color: 0xe88b4d, xp: 5, damage: 11 },
@@ -479,6 +612,15 @@ const enemies = {
   warden: { name: '石鳞盾卫', hp: 78, speed: 2.20, radius: .92, damage: 14, xp: 10, color: 0xb9b1a2, floor: 10, weight: 14, zones: [0,1], body: 'box', shield: .30 },
   sniper: { name: '长瞳凝视者', hp: 26, speed: 2.60, radius: .62, damage: 18, xp: 6, color: 0xffe08a, floor: 12, weight: 12, zones: [3], body: 'gem', action: 'beam', range: 26, cd: 4.2, keep: 16, limit: 2 },
   orbitter: { name: '环刃傀儡', hp: 40, speed: 3.20, radius: .70, damage: 10, xp: 8, color: 0xff9c72, floor: 14, weight: 12, zones: [2,3], body: 'torus', action: 'ring', range: 17, cd: 2.8, keep: 11, shots: 3 },
+  reflection: { name: '镜像分身', hp: 40, speed: 2.4, radius: .92, damage: 7, xp: 0, color: 0xd7bcfb, body: 'gem', action: 'fan', range: 22, cd: 2.2, keep: 11, limit: 2 },
+  bloomer: { name: '花蕾喷吐者', hp: 52, speed: 0, radius: .77, damage: 10, xp: 11, color: 0xf6aed3, floor: 21, weight: 29, zones: [4], body: 'ball', action: 'ring', range: 25, cd: 2.9, shots: 6 },
+  vine_lurker: { name: '藤蔓潜伏者', hp: 40, speed: 3.6, radius: .66, damage: 14, xp: 9, color: 0x8be7b5, floor: 22, weight: 23, zones: [4], body: 'cone', action: 'ambush' },
+  jelly: { name: '潮汐水母', hp: 46, speed: 2.2, radius: .72, damage: 12, xp: 12, color: 0x8ae1fc, floor: 26, weight: 29, zones: [5], body: 'ball', action: 'zap', range: 3.1, cd: 2.4 },
+  coral: { name: '珊瑚炮台', hp: 70, speed: 0, radius: .84, damage: 15, xp: 14, color: 0xf7aaca, floor: 27, weight: 23, zones: [5], body: 'cone', action: 'lob', range: 30, cd: 2.8, platform: true },
+  mech: { name: '铆钉机甲', hp: 110, speed: 2.0, radius: .98, damage: 18, xp: 16, color: 0xf1c09a, floor: 31, weight: 29, zones: [6], body: 'box', shield: .40 },
+  steamer: { name: '蒸汽哨兵', hp: 58, speed: 2.8, radius: .73, damage: 14, xp: 13, color: 0xffa980, floor: 32, weight: 23, zones: [6], body: 'torus', action: 'steam', range: 8, cd: 2.9 },
+  puppet: { name: '提线木偶', hp: 64, speed: 3.0, radius: .72, damage: 16, xp: 14, color: 0xfac2f4, floor: 36, weight: 29, zones: [7], body: 'gem', blast: true },
+  host: { name: '报幕人', hp: 44, speed: 2.4, radius: .66, damage: 8, xp: 12, color: 0xcda4ff, floor: 37, weight: 23, zones: [7], body: 'ball', action: 'ward', keep: 10, range: 20, cd: 3.3 },
   boss: { hp: 620, speed: 3.5, radius: 1.47, color: 0xff653d, xp: 36, damage: 19 }
 };
 const WAVE_TABLE = { stalker: [1,60], shooter: [1,25], charger: [2,20,[0,2]], bomber: [3,18] };
@@ -498,14 +640,41 @@ const BOSS_DECKS = [
   [['spiral','dash','ring','summon','leap'], ['cage']],
   [['fan','spike','summon','poison','dash'], ['bloom']],
   [['eruption','dash','ring','summon','leap'], ['heat']],
-  [['mirror','storm','blink','pull','phase'], ['rift']]
+  [['mirror','storm','blink','pull','phase'], ['rift']],
+  [['spiral','summon','cage','poison','heal'], ['bloom']],
+  [['ringWave','fan','zone','summon','lance'], ['tidecall']],
+  [['eruption','dash','heat','summon','hammer'], ['magnet']],
+  [['mirror','blink','rift','curtain'], ['encore']]
 ];
+const FINAL_BOSS_DECK = [['spiral','zone','eruption','mirror'], ['cage','heat','rift'], ['encore']];
 const readStore = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 };
 function writeStore(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* 浏览器禁止文件页面存储时仍可游玩。 */ }
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch { return false; }
 }
+const RUN_SAVE = 'abyss-echo.run.v2', META_SAVE = 'abyss-echo.meta.v1';
+const ALTAR = {
+  extraReroll: ['余响', '每局重掷次数 +1', 150],
+  startBlessing: ['启程', '开局额外获得一次祝福选择', 200],
+  relicStart: ['遗物共鸣', '开局获得一件随机遗物', 300],
+  revive: ['不屈', '每局首次致死时可恢复一半生命', 450]
+};
+const meta = loadMeta();
+function loadMeta() {
+  const saved = readStore(META_SAVE, {});
+  const result = {};
+  for (const id of ['runs','points','bestFloor','deathFloor','totalKills','deepest','deathStreak']) {
+    result[id] = Number.isFinite(saved[id]) ? Math.max(0, Math.floor(saved[id])) : 0;
+  }
+  result.unlocks = Array.isArray(saved.unlocks) ? saved.unlocks.filter(id => Object.hasOwn(ALTAR, id)) : [];
+  result.cleared20 = saved.cleared20 === true;
+  result.cleared40 = saved.cleared40 === true;
+  result.enteredDeep = saved.enteredDeep === true || result.deepest >= 21;
+  return result;
+}
+function saveMeta() { writeStore(META_SAVE, meta); }
 const storedOptions = readStore('abyss-echo.options', {});
 const options = {
   volume: Number.isFinite(storedOptions.volume) ? clamp(storedOptions.volume, 0, 1) : .56,
@@ -557,10 +726,15 @@ function clearOfZones(x, z, radius) {
   return Math.abs(x) + radius <= WIDTH - 2.2 && Math.abs(z) + radius <= DEPTH - 2.2 &&
     [[0,3.2,3], [0,-4.7,3.2], [0,-10,3], [0,0,2.6]].every(([cx, cz, r]) => squared(x - cx, z - cz) >= (r + radius) ** 2);
 }
+function modifierCount(floor) { return floor < 4 ? 0 : floor < 10 ? 1 : floor < 17 ? 2 : floor > 20 && floor % 5 === 1 ? 1 : 3; }
 function rollModifiers(rng, floor) {
-  const count = floor < 4 ? 0 : floor < 10 ? 1 : floor < 17 ? 2 : 3;
-  const pool = Object.keys(MODIFIERS);
+  const count = modifierCount(floor);
+  const pool = BASE_MODIFIERS.slice();
   const drawn = [];
+  if (floor > 20) {
+    const specials = zones[Math.floor((floor - 1) / 5)].modifiers;
+    drawn.push(DEEP_FLOORS[floor - 21].modifier ?? specials[Math.floor(rng() * specials.length)]);
+  }
   while (drawn.length < count && pool.length) {
     const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
     if (id === 'gale' && drawn.includes('overload') || id === 'overload' && drawn.includes('gale')) continue;
@@ -936,7 +1110,8 @@ function makePlayer() {
   const legs = [];
   for (const side of [-1, 1]) {
     const leg = new THREE.Group();
-    leg.position.set(side * .21, .65, 0);
+    leg.position.set(side * .21, .58, 0);
+    leg.scale.y = .86;
     body.add(leg);
     legs.push(leg);
     mesh(leg, 'box', armor, 0, -.23, 0, .31, .49, .37);
@@ -948,16 +1123,22 @@ function makePlayer() {
   mesh(body, 'box', armor, 0, 1.18, -.015, .77, .52, .51);
   mesh(body, 'gem', trim, 0, 1.24, .29, .26, .33, .12);
   mesh(body, 'gem', playerEye, 0, 1.26, .385, .070, .10, .035);
-  const head = mesh(body, 'helm', armor, 0, 1.78, .02, 1, 1, .96);
+  const head = mesh(body, 'helm', armor, 0, 1.82, .02, 1.18, 1.16, 1.12);
   head.rotation.y = Math.PI / 8;
   mesh(body, 'gem', trim, 0, 2.02, .22, .065, .19, .15);
-  mesh(body, 'box', playerEye, 0, 1.80, .353, .41, .064, .07);
+  const shine = basic(0xfff9e9), blush = basic(0xffa8c7, .62);
+  for (const side of [-1,1]) {
+    mesh(body, 'ball', playerEye, side * .13, 1.87, .464, .093, .112, .068);
+    mesh(body, 'ball', shine, side * .13 - .021, 1.904, .521, .028);
+    mesh(body, 'ball', blush, side * .251, 1.77, .421, .083, .046, .032);
+  }
   mesh(body, 'gem', trim, 0, 1.67, .337, .19, .17, .09);
   for (const side of [-1, 1]) {
     mesh(body, 'gem', trim, side * .5, 1.35, -.015, .35, .25, .31).rotation.z = side * -.22;
     mesh(body, 'box', armor, side * .51, 1.07, .05, .24, .43, .27).rotation.x = -.31;
   }
   const weapon = new THREE.Group();
+  weapon.scale.setScalar(.86);
   weapon.position.set(.45, 1.12, .30);
   body.add(weapon);
   mesh(weapon, 'box', materials.iron, 0, 0, .33, .25, .26, .93);
@@ -965,6 +1146,7 @@ function makePlayer() {
   mesh(weapon, 'box', playerEye, 0, .065, .46, .09, .17, .62);
   mesh(weapon, 'box', materials.iron, 0, .035, .84, .20, .17, .04);
   const cape = new THREE.Group();
+  cape.scale.setScalar(.9);
   cape.position.set(0, 1.43, -.29);
   body.add(cape);
   const capeShape = new THREE.Shape();
@@ -997,7 +1179,7 @@ function mobPalette(color, elite) {
   }
   return mobMaterials.get(key);
 }
-function makeEnemy(kind, elite, zoneIndex) {
+function makeEnemy(kind, elite, zoneIndex, finale = false) {
   const root = new THREE.Group();
   const model = new THREE.Group();
   root.add(model);
@@ -1008,28 +1190,28 @@ function makeEnemy(kind, elite, zoneIndex) {
   ground(root, 'plane', materials.shadow, 0, 0, data.radius * 3.5, .02);
   if (elite) ground(root, 'ring', materials.elite, 0, 0, data.radius * 1.75, .031);
   if (kind === 'stalker') {
-    mesh(model, 'ball', shell, 0, .63, -.10, .51, .47, .62);
-    mesh(model, 'ball', shell, 0, .73, .43, .34, .29, .31);
+    mesh(model, 'ball', shell, 0, .63, -.10, .51, .52, .62);
+    mesh(model, 'ball', shell, 0, .78, .43, .39, .34, .34);
     for (const side of [-1, 1]) {
-      mesh(model, 'gem', eye, side * .16, .76, .68, .09, .075, .04);
+      mesh(model, 'ball', eye, side * .16, .83, .72, .102, .12, .062);
       const foot = mesh(model, 'box', bone, side * .37, .23, .14, .17, .35, .75);
       feet.push(foot);
     }
     for (let i = 0; i < 4; i++) {
-      const spine = mesh(model, 'cone', bone, (i % 2 - .5) * .55, .95 + i * .027, .17 - i * .18, .13, .61, .13);
+      const spine = mesh(model, 'ball', bone, (i % 2 - .5) * .55, .99 + i * .027, .17 - i * .18, .14, .24, .14);
       spine.rotation.x = -.42;
     }
   } else if (kind === 'shooter') {
     ornament = mesh(model, 'torus', ring, 0, 1.08, 0, .92);
-    mesh(model, 'gem', shell, 0, 1.1, 0, .55, .93, .52);
+    mesh(model, 'ball', shell, 0, 1.1, 0, .62, .79, .62);
     mesh(model, 'gem', eye, 0, 1.11, .33, .23, .39, .28);
     for (const side of [-1, 1]) mesh(model, 'gem', bone, side * .67, 1.03, 0, .16, .34, .14);
   } else if (kind === 'charger') {
-    mesh(model, 'box', shell, 0, .76, -.12, 1.36, 1.06, 1.28);
+    mesh(model, 'ball', shell, 0, .76, -.12, .78, .68, .72);
     mesh(model, 'box', bone, 0, .92, .46, .82, .58, .48);
     mesh(model, 'box', eye, 0, .96, .723, .55, .10, .032);
     for (const side of [-1, 1]) {
-      mesh(model, 'cone', bone, side * .63, 1.38, .52, .22, .86, .21).rotation.z = -side * .31;
+      mesh(model, 'ball', bone, side * .59, 1.36, .52, .20, .32, .20).rotation.z = -side * .31;
       feet.push(mesh(model, 'box', shell, side * .53, .25, .12, .37, .46, .97));
     }
   } else if (kind === 'bomber') {
@@ -1038,13 +1220,13 @@ function makeEnemy(kind, elite, zoneIndex) {
     for (let i = 0; i < 9; i++) {
       const a = i * TAU / 9;
       const [x,z] = polar(a, .58);
-      const spike = mesh(model, 'cone', bone, x, .75 + Math.sin(i * 3) * .28, z, .12, .47, .12);
+      const spike = mesh(model, 'ball', bone, x, .75 + Math.sin(i * 3) * .28, z, .13, .23, .13);
       spike.rotation.set(Math.sin(a) * .95, 0, -Math.cos(a) * .95);
     }
     ornament = mesh(model, 'torus', ring, 0, .7, 0, .73);
     ornament.rotation.x = Math.PI / 2;
   } else if (kind === 'boss') {
-    buildBossModel(model, zoneIndex, shell, bone, eye, ring, feet);
+    buildBossModel(model, finale ? zones.length : zoneIndex, shell, bone, eye, ring, feet);
     ornament = model.getObjectByName('boss-ornament');
   } else {
     const r = data.radius;
@@ -1058,11 +1240,63 @@ function makeEnemy(kind, elite, zoneIndex) {
     else if (data.action) ornament = mesh(model, 'torus', ring, 0, .80, 0, r * 1.27, r * 1.27, .24);
     else mesh(model, 'gem', eye, 0, 1.34, 0, .25);
   }
+  const batches = batchEnemyParts(model, feet, ornament, shield);
   scene.add(root);
-  return { root, model, feet, ornament, shield };
+  return { root, model, feet, ornament, shield, batches };
+}
+function batchEnemyParts(model, feet, ornament, shield) {
+  const groups = new Map();
+  for (const part of model.children) {
+    if (!part.isMesh || part === ornament || part === shield || feet.includes(part) || part.material.transparent) continue;
+    const key = `${part.geometry.id}:${part.material.id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(part);
+  }
+  const batches = [];
+  for (const parts of groups.values()) {
+    if (parts.length < 2) continue;
+    const batch = new THREE.InstancedMesh(parts[0].geometry, parts[0].material, parts.length);
+    parts.forEach((part, i) => { part.updateMatrix(); batch.setMatrixAt(i, part.matrix); });
+    model.remove(...parts);
+    model.add(batch);
+    batches.push(batch);
+  }
+  return batches;
+}
+function removeEnemy(e) {
+  scene.remove(e.root);
+  for (const batch of e.batches) batch.dispose();
 }
 function buildBossModel(model, index, shell, bone, eye, ring, feet) {
-  if (index === 0) {
+  if (index >= 4) {
+    mesh(model, 'ball', shell, 0, 1.18, 0, 1.20, 1.18, .91);
+    const face = mesh(model, index === 6 ? 'box' : 'ball', bone, 0, 2.27, .35, 1.12, .86, .62);
+    face.rotation.y = .11;
+    for (const side of [-1,1]) {
+      if (index < zones.length) mesh(model, 'ball', eye, side * .32, 2.33, .96, .135, .176, .085);
+      feet.push(mesh(model, 'ball', shell, side * .75, .38, .26, .53, .54, .66));
+    }
+    if (index === 4) {
+      for (let i = 0; i < 7; i++) {
+        const [x,z] = polar(i * TAU / 7, .94);
+        mesh(model, 'ball', bone, x, 2.85, z, .53, .30, .46);
+      }
+      mesh(model, 'gem', eye, 0, 3.03, 0, .37);
+    } else if (index === 5) {
+      mesh(model, 'torus', ring, 0, 2.98, -.09, 1.24).name = 'boss-ornament';
+      for (const side of [-1,1]) mesh(model, 'gem', eye, side * 1.08, 1.08, 0, .24, .62, .25);
+    } else if (index === 6) {
+      for (const side of [-1,1]) mesh(model, 'box', shell, side * 1.22, 1.52, .21, .75, 1.14, .92);
+      mesh(model, 'torus', ring, 0, .97, .87, .64).name = 'boss-ornament';
+    } else if (index === 7) {
+      for (const side of [-1,1]) mesh(model, 'gem', shell, side * .80, 2.83, .0, .42, .87, .38).rotation.z = side * -.36;
+      mesh(model, 'torus', ring, 0, 2.18, -.29, 1.51).name = 'boss-ornament';
+    } else {
+      mesh(model, 'gem', eye, 0, 2.12, .99, .22, .13, .09);
+      mesh(model, 'torus', ring, 0, 3.03, .14, 1.66).name = 'boss-ornament';
+      for (const side of [-1,1]) mesh(model, 'ball', shell, side * 1.15, 1.6, -.12, .56, .95, .45);
+    }
+  } else if (index === 0) {
     mesh(model, 'box', shell, 0, 1.57, -.16, 2.04, 1.58, 1.22);
     mesh(model, 'box', bone, 0, 1.86, .48, 1.47, 1.0, .36);
     mesh(model, 'box', shell, 0, 2.68, .18, 1.11, .64, .85);
@@ -1378,9 +1612,15 @@ function sound(name, sourceX) {
 
 // 楼层推进与局内数值
 function bonus(id) { return run.build.get(id) || 0; }
+function relicOwned(id) { return Number(run.relics.includes(id)); }
+function awakened(id) { return Number(run.awakenings.includes(id)); }
+function tagCount(tag) { return RELICS.filter(r => r.tag === tag && relicOwned(r.id)).length; }
+function routeCount(route) { return ROUTES[route].filter(id => bonus(id) > 0).length; }
 function xpNeeded(level) { return 13 + level * 6 + Math.floor(level ** 1.37); }
 function rebuildStats() {
-  const maxHP = Math.max(28, Math.round((100 + bonus('vigor') * 25) * .70 ** bonus('glass')));
+  const edge = routeCount('edge'), frost = routeCount('frost'), thunder = routeCount('thunder');
+  const maxHP = Math.max(28, Math.round((100 + bonus('vigor') * 25 + 60 * awakened('aw_bulwark') + 20 * relicOwned('r_vine') +
+    (frost >= 6 ? 30 : frost >= 3 ? 12 : 0)) * .70 ** bonus('glass') * .8 ** awakened('aw_ruin')));
   const delta = maxHP - player.maxHP;
   player.maxHP = maxHP;
   player.hp = clamp(player.hp + delta, 1, maxHP);
@@ -1405,25 +1645,53 @@ function rebuildStats() {
     regen: 1.1 * bonus('regen'),
     armor: .87 ** bonus('armor')
   };
-  while (player.blades.length < bonus('orbit') * 2) {
+  const s = player.stats;
+  s.damage *= (1 + .12 * relicOwned('r_edge_whet') + .10 * relicOwned('r_ember_core') + .10 * Number(tagCount('edge') >= 3)) *
+    (1 + .08 * Number(edge >= 3) + .08 * Number(edge >= 6)) * (1 + .35 * awakened('aw_ruin'));
+  s.speed *= 1 + .06 * relicOwned('r_edge_gale');
+  s.crit += .06 * relicOwned('r_edge_hunter') + .05 * Number(tagCount('edge') >= 3) + .04 * Number(edge >= 3) + .06 * Number(edge >= 6);
+  s.critDamage += .20 * relicOwned('r_edge_hunter');
+  s.fireInterval /= (1 + .12 * relicOwned('r_edge_gale') + .16 * relicOwned('r_bell')) * (1 + .08 * Number(thunder >= 3) + .08 * Number(thunder >= 6)) * (1 + .30 * awakened('aw_tempo'));
+  s.penetration += relicOwned('r_edge_pierce') + Number(edge >= 6);
+  s.bulletSpeed *= (1 + .10 * Number(thunder >= 6)) * (1 + .15 * awakened('aw_tempo') + .15 * relicOwned('r_current'));
+  s.novaR *= (1 + .15 * relicOwned('r_ember_core')) * (1 + .1 * Number(frost >= 6)) * (1 + .25 * awakened('aw_overload'));
+  s.novaCD *= .65 ** awakened('aw_overload');
+  s.armor *= .92 ** (Number(frost >= 3) + Number(frost >= 6) + relicOwned('r_mask')) * .88 ** awakened('aw_bulwark');
+  s.dashCD *= .88 ** relicOwned('r_gear');
+  s.regen += .8 * relicOwned('r_pearl');
+  s.novaHit *= 1 + .20 * relicOwned('r_coal');
+  s.enemyTaken = 1 + .06 * bonus('rend');
+  s.emberResonance = tagCount('ember') >= 3;
+  s.frostResonance = tagCount('frost') >= 3;
+  s.thunderResonance = tagCount('thunder') >= 3;
+  s.chainChance = (bonus('chain') ? .19 + .095 * bonus('chain') : 0) + .08 * Number(thunder >= 3);
+  s.chainExtra = Number(thunder >= 6) + Number(s.thunderResonance);
+  s.fullShot = awakened('aw_swarm');
+  const bladeCount = bonus('orbit') * 2 + (player.huntBladeT > 0 ? 4 : 0);
+  while (player.blades.length > bladeCount) scene.remove(player.blades.pop());
+  while (player.blades.length < bladeCount) {
     const blade = mesh(scene, 'gem', materials.playerEye, 0, 0, 0, .15, .12, .48);
     player.blades.push(blade);
   }
 }
-function newRun({ seed = Math.floor(Math.random() * 0x100000000) >>> 0, resume = false } = {}) {
+function newRun({ seed = Math.floor(Math.random() * 0x100000000) >>> 0, resume = false, inherited = null } = {}) {
   clearModal();
   resetInput();
+  clearBattle();
   if (player) for (const blade of player.blades ?? []) scene.remove(blade);
   player = Object.assign(player ?? makePlayer(), {
     maxHP: 100, hp: 100, hpTrail: 100, xp: 0, level: 1, blades: [],
     dashCD: 0, novaCD: 0, invul: 0, fireCD: 0, recoil: 0, dashTime: 0,
-    dashX: 0, dashZ: 0, stride: 0, tilt: 0, dashHits: new Set(), shots: 0, slowT: 0
+    dashX: 0, dashZ: 0, stride: 0, tilt: 0, dashHits: new Set(), shots: 0, slowT: 0,
+    shield: 0, shieldT: 0, phaseT: 0, huntBladeT: 0, volley: null, shellCd: 0, charge: 0, hitCount: 0, swiftT: 0
   });
   run = {
     floor: 1, wave: 0, waveCount: 2, delay: 0, alive: 0, spawn: [], spawnDelay: 0, boss: null,
     kills: 0, damage: 0, seconds: 0, build: new Map(), pending: [], choices: [],
     rerolls: 3, revives: 0, phase: 'entry', element: dom.arcana.value || 'thunder',
-    seed, modifiers: [], relics: [], awakenings: [], skills: { guard: null, barrage: null }
+    seed, modifiers: [], relics: [], awakenings: [], skills: { guard: null, barrage: null }, skillCd: { guard: 0, barrage: 0 },
+    bossKills: 0, streak: 0, lastKill: -Infinity, bestStreak: 0, seenModifiers: [], seenZones: [],
+    altarRevive: false, assistFloor: meta.deathStreak >= 2 ? meta.deathFloor : 0
   };
   materials.bullet.color.setHex(arcana[run.element].color);
   textIf(dom['nova-name'], arcana[run.element].nova);
@@ -1435,14 +1703,27 @@ function newRun({ seed = Math.floor(Math.random() * 0x100000000) >>> 0, resume =
   dom.hud.hidden = false;
   resize();
   player.root.visible = true;
-  player.root.scale.setScalar(1.10);
-  if (!resume) openFloor(1);
+  player.root.scale.setScalar(1.16);
+  if (!resume) {
+    clearRun();
+    meta.runs++;
+    saveMeta();
+    if (meta.runs >= 3 && run.assistFloor) run.rerolls++;
+    if (meta.unlocks.includes('extraReroll')) run.rerolls++;
+    if (meta.unlocks.includes('startBlessing')) run.pending.push('start');
+    if (inherited) gainRelic(inherited);
+    if (meta.unlocks.includes('relicStart')) {
+      const [relic] = chooseRelics(1);
+      if (relic) gainRelic(relic);
+    }
+    openFloor(1);
+  }
   updateBuild();
   unlockAudio();
   sound('portal');
 }
 function clearBattle() {
-  for (const e of mobList) scene.remove(e.root);
+  for (const e of mobList) if (!e.dead) removeEnemy(e);
   for (const d of drops) scene.remove(d.obj);
   for (const fx of effects) removeEffect(fx);
   for (const n of numberList) recycleNumber(n);
@@ -1451,8 +1732,11 @@ function clearBattle() {
   for (const b of bolts) { b.life = 0; b.volley = null; b.hits.length = 0; }
   for (const b of hostile) b.life = 0;
   for (const p of dust) p.life = 0;
+  for (const material of run?.terrain?.materials ?? []) material.dispose();
+  if (run) run.terrain = null;
+  dom.arena.classList.remove('curtain', 'mist');
 }
-function openFloor(floor, { resume = false } = {}) {
+function openFloor(floor, { resume = false, modifiers } = {}) {
   clearBattle();
   run.floor = floor;
   run.wave = 0;
@@ -1460,19 +1744,32 @@ function openFloor(floor, { resume = false } = {}) {
   run.delay = 1.25;
   run.spawn = [];
   run.boss = null;
+  run.finaleReady = false;
   run.alive = 0;
   run.trialDone = false;
+  run.vaultDone = false;
+  run.vaultBoxes = [];
+  run.awakeningRevive = false;
+  player.slideX = player.slideZ = 0;
   run.phase = 'entry';
+  dom['save-note'].hidden = true;
   run.zoneIndex = Math.floor((floor - 1) / 5);
+  run.deepFloor = DEEP_FLOORS[floor - 21] ?? null;
   run.floorPlan = planFloor(run.seed, floor);
   run.layout = run.floorPlan.layout;
-  run.modifiers = run.floorPlan.modifiers;
+  const savedModifiers = Array.isArray(modifiers) && modifiers.length <= 3 && new Set(modifiers).size === modifiers.length &&
+    modifiers.every(id => BASE_MODIFIERS.includes(id) || zones[run.zoneIndex].modifiers?.includes(id)) &&
+    !(modifiers.includes('gale') && modifiers.includes('overload'));
+  run.modifiers = savedModifiers ? modifiers.slice() : run.floorPlan.modifiers;
+  run.floorPlan.modifiers = run.modifiers;
+  if (!resume) run.seenModifiers.push(...run.modifiers);
+  run.seenModifiers = run.seenModifiers.slice(-9);
   run.storm = { timer: 14, target: null };
   rebuildStats();
   textIf(dom['modifier-list'], run.modifiers.map(id => MODIFIERS[id].name).join(' · '));
   dom['modifier-list'].title = run.modifiers.map(id => MODIFIERS[id].description).join(' ');
   dom['modifier-list'].hidden = !run.modifiers.length;
-  dom.arena.classList.toggle('mist', hasModifier('mist'));
+  dom.arena.classList.toggle('mist', hasModifier('mist') || hasModifier('pollen'));
   player.root.position.set(0, 0, 3.2);
   player.root.rotation.y = Math.PI;
   player.dashTime = 0;
@@ -1482,26 +1779,55 @@ function openFloor(floor, { resume = false } = {}) {
   view.x = 0; view.z = 3.2;
   aim.x = 0; aim.z = -1;
   dom['trial-entry'].hidden = true;
+  dom['vault-entry'].hidden = true;
   buildRoom(run.zoneIndex, floor);
+  if (run.deepFloor) setupTerrain();
+  for (const [slot, skill] of Object.entries(SKILLS)) if (floor === skill.floor && !run.skills[slot]) run.pending.push(slot);
   updateCamera(1);
   updateHUD(1);
-  announce(zone.name, `第 ${floor} 层 · ${floor % 5 === 0 ? '首领据守' : '清除所有敌人'}`);
+  announce(zone.name, `第 ${floor} 层 · ${run.deepFloor?.name ?? (floor % 5 === 0 ? '首领据守' : '清除所有敌人')}`);
+  if (!resume) {
+    saveRun(true);
+    showZoneBriefing();
+  }
+}
+function showZoneBriefing() {
+  if (!run.deepFloor || run.seenZones.includes(run.zoneIndex) || run.phase !== 'entry') return;
+  mode = 'briefing';
+  showModal(zone.name, zone.hint);
+  modalAction('开始探索', () => {
+    run.seenZones.push(run.zoneIndex);
+    resumeGame();
+    saveRun(true);
+  }, 'primary').focus();
 }
 function startWave() {
   run.wave++;
   run.phase = 'combat';
   run.spawnDelay = 0;
+  if (run.terrain) { run.terrain.waveTime = 0; run.terrain.grown = false; }
   if (run.floor % 5 === 0 && run.wave === run.waveCount) {
-    const e = spawnEnemy('boss', 0, -10);
-    run.boss = e;
-    e.timer = .80;
-    e.moveDeck = BOSS_DECKS[run.zoneIndex];
-    e.moveCursor = 0;
-    announce(zone.boss, '首领现身');
-    sound('boss');
+    spawnBoss();
     return;
   }
   run.spawn.push(...planWave(run.seed, run.floor, run.wave, run.zoneIndex));
+}
+function spawnBoss(finale = false) {
+  const e = spawnEnemy('boss', 0, -10, false, false, finale);
+  if (!e) return;
+  run.boss = e;
+  e.timer = .8;
+  e.stage = 1;
+  e.finale = finale;
+  e.name = finale ? FINAL_BOSS_NAME : zone.boss;
+  e.moveDeck = finale ? FINAL_BOSS_DECK : BOSS_DECKS[run.zoneIndex];
+  e.moveCursor = 0;
+  if (finale) {
+    e.hp = e.maxHP = e.trail = Math.round(enemies.boss.hp * FINAL_BOSS_HP_MULT);
+    e.root.scale.setScalar(1.45);
+  }
+  announce(e.name, finale ? '回响之源 · 终局首领' : '首领现身');
+  sound('boss');
 }
 function planWave(seed, floor, wave, zoneIndex) {
   const rng = seeded((seed ^ Math.imul(floor, 0x85ebca6b) ^ Math.imul(wave, 0xc2b2ae35)) >>> 0);
@@ -1510,10 +1836,11 @@ function planWave(seed, floor, wave, zoneIndex) {
   const pool = Object.entries(WAVE_TABLE).filter(([, [min, , zones]]) => min <= floor && (min <= 14 || zones.includes(zoneIndex)));
   const used = new Map();
   const result = [];
+  const signature = DEEP_FLOORS[floor - 21]?.enemy;
   for (let i = 0; i < count; i++) {
     const options = pool.filter(([id]) => (used.get(id) ?? 0) < Math.min(Math.ceil(count * .5), enemies[id].limit ?? count));
     const mixed = floor >= 10 && wave % 3 === 0 && i < 3 ? options.filter(([id]) => !used.has(id)) : options;
-    const kind = floor === 1 && wave === 1 ? 'stalker' :
+    const kind = signature && i === 0 ? signature : floor === 1 && wave === 1 ? 'stalker' :
       pickWeighted((mixed.length ? mixed : options).map(([id, [, weight, zones]]) => [id, weight * (zones?.includes(zoneIndex) ? 1.35 : 1)]), rng) ?? 'stalker';
     used.set(kind, (used.get(kind) ?? 0) + 1);
     result.push({ kind, forceElite: i === 0 && floor >= 17 && floor <= 20 && wave >= 2, seed: (rng() * 0x100000000) >>> 0 });
@@ -1529,21 +1856,24 @@ function spawnPoint(rng = Math.random, p = player.root.position) {
   }
   return [p.x > 0 ? -18 : 18, p.z > 0 ? -13 : 13];
 }
-function spawnEnemy(kind, x, z, minion = false, forceElite = false) {
+function spawnEnemy(kind, x, z, minion = false, forceElite = false, finale = false) {
   if (mobList.length >= caps.enemies) return null;
   const data = enemies[kind], isBoss = kind === 'boss';
   if (data.limit && mobList.filter(e => !e.dead && e.kind === kind).length >= data.limit) return null;
-  const elite = !minion && !isBoss && (forceElite ||
-    (run.floor >= 6 && Math.random() < Math.min(.26, .09 + .006 * (run.floor - 6))));
-  const hp = Math.round(data.hp * (isBoss ? BOSS_HP_MULT[run.zoneIndex] : 1 + .072 * (run.floor - 1)) * (elite ? 2.6 : minion ? .72 : 1));
-  const model = makeEnemy(kind, elite, run.zoneIndex);
+  const chance = run.floor > 30 ? .20 : run.floor > 20 ? .18 : Math.min(.26, .09 + .006 * (run.floor - 6));
+  const respite = run.floor > 20 && run.floor % 5 === 1;
+  const onPlatform = run.terrain?.platforms?.some(platform => distance(platform.position, { x, z }) < 4.45);
+  const elite = !minion && !isBoss && (forceElite || (!respite && run.floor >= 6 && Math.random() < chance + (onPlatform ? .10 : 0)));
+  const difficulty = floorDifficulty(run.floor);
+  const hp = Math.round(data.hp * (isBoss ? difficulty.boss : difficulty.hp) * (elite ? 2.6 : minion ? .72 : 1));
+  const model = makeEnemy(kind, elite, run.zoneIndex, finale);
   const scale = elite ? 1.3 : isBoss ? 1.28 : 1;
   model.root.scale.setScalar(scale);
   model.root.position.set(x, 0, z);
   const e = {
     ...model, kind, elite, data, hp, maxHP: hp, trail: hp, r: data.radius * scale,
-    speed: data.speed * (1 + .013 * (run.floor - 1)) * (elite ? 1.10 : 1) * (hasModifier('gale') ? 1.1 : 1),
-    damage: data.damage * (1 + .028 * (run.floor - 1)) * (elite ? 1.22 : 1) * (hasModifier('overload') ? 1.12 : 1),
+    speed: data.speed * difficulty.speed * (elite ? 1.10 : 1) * (hasModifier('gale') ? 1.1 : 1) * (run.floor === 1 ? .92 : 1),
+    damage: data.damage * difficulty.damage * (elite ? 1.22 : 1) * (hasModifier('overload') ? 1.12 : 1),
     timer: random(.5, 1.75), state: 'hunt', move: -1, dead: false, enrage: false, action: 0,
     phase: random(0, TAU), flash: 0, slow: 0, burn: 0, burnTick: 0, charge: 0, bladeTime: 0,
     dx: 0, dz: -1, turn: Math.random() < .5 ? -1 : 1, spawnTime: .33, fx: null, summoned: minion,
@@ -1555,13 +1885,27 @@ function spawnEnemy(kind, x, z, minion = false, forceElite = false) {
   shock(x, z, e.r * 1.65, zone.fire, .41);
   return e;
 }
+function floorDifficulty(floor) {
+  const depth = Math.max(0, floor - 20) ** 2;
+  return {
+    hp: (1 + .072 * (floor - 1)) * (1 + .0009 * depth),
+    damage: (1 + .028 * (floor - 1)) * (1 + .0004 * depth),
+    speed: Math.min(1.35, (1 + .013 * (floor - 1)) * (1 + .0002 * depth)),
+    boss: BOSS_HP_MULT[Math.floor((floor - 1) / 5)]
+  };
+}
 function finishFloor(reason = 'clear') {
   run.phase = 'cleared';
   for (const b of hostile) b.life = 0;
   for (const hazard of hazards) if (hazard.fx) hazard.fx.t = hazard.fx.duration;
   hazards.length = 0;
+  if (run.terrain) {
+    for (const vine of [...run.terrain.vines]) removeVine(vine);
+    for (const marker of run.terrain.markers) marker.visible = false;
+  }
   for (const d of drops) d.pull = true;
   run.pending.push(reason);
+  if (reason === 'trial' && Math.random() < .35) run.pending.push('relic');
   sound('portal');
   if (reason === 'trial') announce('试炼完成', '领取额外祝福');
   else announce('地牢已肃清', `第 ${run.floor} 层完成`);
@@ -1582,11 +1926,32 @@ function startTrial() {
   updateHUD(0);
   sound('boss');
 }
-function makePortal() {
+function vaultFloor(floor) { return floor % 5 === 3 || (floor > 20 && floor % 5 === 1) || floor === 24; }
+function startVault() {
+  if (mode !== 'play' || run.phase !== 'portal' || !vaultFloor(run.floor) || run.vaultDone) return;
+  run.vaultDone = true;
+  run.phase = 'vault';
+  portal.root.visible = false;
+  dom['portal-note'].hidden = true;
+  dom['vault-entry'].hidden = true;
+  for (const [x, z] of [[-4,0],[0,0],[4,0]]) {
+    const box = mesh(room, 'box', materials.soul, x, .39, z, 1.15, .75, .81);
+    mesh(box, 'gem', materials.heal, 0, .72, 0, .31, .38, .37);
+    run.vaultBoxes.push(box);
+  }
+  announce('幽库', '靠近任一宝箱，挑选一件遗物');
+}
+function finishVault() {
+  for (const box of run.vaultBoxes) room.remove(box);
+  run.vaultBoxes.length = 0;
+  revealPortal();
+}
+function makePortal(options) {
   const root = new THREE.Group(), swirl = new THREE.Group();
   root.position.set(0, .02, -4.7);
   room.add(root); root.add(swirl);
-  const cyan = basic(0x71f5da, .77), dim = basic(0x56c7bd, .35);
+  const tint = run.floor === 20 ? 0xd6b1ff : 0x71f5da;
+  const cyan = basic(tint, .77), dim = basic(tint, .35);
   decorateRune(root, 0, 0, 1.85, dim, 10);
   const floorGlow = basic(0x0c5355, .38);
   ground(root, 'disc', floorGlow, 0, 0, 1.40);
@@ -1596,28 +1961,78 @@ function makePortal() {
     const gem = mesh(swirl, 'gem', cyan, x, .83, z, .14, .64, .14);
     gem.rotation.z = (i % 2 - .5) * .22;
   }
-  const halo = new THREE.SpriteMaterial({ map: materials.glowMap, color: 0x49eada, opacity: .71, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending });
+  const halo = new THREE.SpriteMaterial({ map: materials.glowMap, color: tint, opacity: .71, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending });
   sprite(root, halo, 0, 1.05, 0, 3.2);
   const axis = mesh(swirl, 'gem', cyan, 0, 1.05, 0, .44, .98, .44);
   const arch = mesh(root, 'torus', dim, 0, 1.22, 0, .98, 1.28, .70);
   portal = { root, swirl, axis, arch, materials: [cyan, dim, halo, floorGlow], age: 0, outside: false };
-  revealPortal();
+  revealPortal(options);
 }
-function revealPortal() {
+function revealPortal({ resume = false } = {}) {
   run.phase = 'portal';
   portal.root.visible = true;
   portal.age = 0;
   portal.outside = false;
-  dom['portal-note'].textContent = run.floor === 20 ? '踏入传送门，返回地表' : '踏入传送门，继续深入';
+  dom['portal-note'].textContent = portalMessage();
   dom['portal-note'].hidden = false;
   dom['trial-entry'].hidden = run.trialDone || run.floor % 5 !== 2;
-  sound('portal');
-  shock(portal.root.position.x, portal.root.position.z, 3.2, 0x7dfbe0, .75);
+  dom['vault-entry'].hidden = run.vaultDone || !vaultFloor(run.floor);
+  if (!resume) {
+    sound('portal');
+    shock(portal.root.position.x, portal.root.position.z, 3.2, 0x7dfbe0, .75);
+    saveRun(true);
+  }
+}
+function portalMessage() {
+  if (run.floor === MAX_FLOOR) return '踏入传送门，返回地表';
+  return run.floor === 20 ? '踏入深渊裂隙，选择去向' : '踏入传送门，继续深入';
+}
+function openRift() {
+  mode = 'rift';
+  showModal('深渊裂隙', '无相之王已陨落。裂隙之后还有更深的地牢。');
+  modalAction('继续深入', () => {
+    if (meta.enteredDeep) { enterDeep(); return; }
+    showModal('继续深入', '穿过裂隙后，本局将继续向下探索。');
+    modalAction('前往第 21 层', enterDeep, 'primary').focus();
+    modalAction('返回裂隙选择', openRift);
+  }, 'primary').focus();
+  modalAction('返回地表', () => endRun(true));
+  modalAction('回响重演', openEchoReplay);
+}
+function enterDeep() {
+  meta.cleared20 = true;
+  meta.enteredDeep = true;
+  meta.deepest = Math.max(20, meta.deepest);
+  saveMeta();
+  mode = 'play';
+  clearModal();
+  openFloor(21);
+}
+function openEchoReplay() {
+  const choices = RELICS.filter(r => relicOwned(r.id));
+  if (!choices.length) { newRun({ seed: run.seed }); return; }
+  showModal('回响重演', '选择一件遗物，带进同种子的下一局。');
+  const list = document.createElement('div');
+  list.className = 'altar-items';
+  for (const relic of choices) {
+    const button = document.createElement('button');
+    button.className = 'text-button';
+    button.textContent = relic.name;
+    button.addEventListener('click', () => newRun({ seed: run.seed, inherited: relic }));
+    list.append(button);
+  }
+  dom['sheet-content'].append(list);
+  list.firstElementChild?.focus();
+  modalAction('返回裂隙选择', openRift);
 }
 function updateFloor(dt) {
+  if (run.phase === 'vault') {
+    if (run.vaultBoxes.some(box => distance(box.position, player.root.position) < 1.6)) openBlessing('vault');
+    return;
+  }
   if (run.phase === 'entry' || run.phase === 'rest') {
     run.delay -= dt;
-    if (run.delay <= 0) startWave();
+    if (run.delay <= 0 && !run.pending.length) startWave();
     return;
   }
   if (run.phase === 'combat') {
@@ -1628,11 +2043,22 @@ function updateFloor(dt) {
         const rng = seeded(seed);
         let [x, z] = spawnPoint(rng, { x: 0, z: 3.2 });
         if (squared(x - player.root.position.x, z - player.root.position.z) < 25) [x, z] = spawnPoint(rng);
+        const platforms = run.terrain?.platforms;
+        if (enemies[kind].platform && platforms?.length) {
+          const available = platforms.filter(platform => distance(platform.position, player.root.position) > 5);
+          const platform = available[Math.floor(rng() * available.length)];
+          if (platform) { x = platform.position.x + (rng() - .5) * 4; z = platform.position.z + (rng() - .5) * 4; }
+        }
         spawnEnemy(kind, x, z, false, forceElite);
         run.spawnDelay = run.wave === 1 && run.floor === 1 ? .28 : .19;
       }
     } else if (!run.alive) {
-      if (run.wave >= run.waveCount) finishFloor();
+      if (run.finaleReady && !run.pending.length && !drops.length) {
+        run.finaleReady = false;
+        spawnBoss(true);
+      } else if (run.finaleReady) {
+        for (const d of drops) d.pull = true;
+      } else if (run.wave >= run.waveCount) finishFloor();
       else { run.phase = 'rest'; run.delay = .87; }
     }
     return;
@@ -1649,10 +2075,10 @@ function updateFloor(dt) {
     portal.age += dt;
     const within = distance(portal.root.position, player.root.position) < 1.32;
     if (!within) portal.outside = true;
-    textIf(dom['portal-note'], !portal.outside ? '先离开光圈，再踏入传送门' :
-      run.floor === 20 ? '踏入传送门，返回地表' : '踏入传送门，继续深入');
+    textIf(dom['portal-note'], !portal.outside ? '先离开光圈，再踏入传送门' : portalMessage());
     if (within && portal.outside && portal.age > .32) {
-      if (run.floor === 20) endRun(true);
+      if (run.floor === MAX_FLOOR) endRun(true);
+      else if (run.floor === 20) openRift();
       else {
         dom['portal-note'].hidden = true;
         sound('portal');
@@ -1666,7 +2092,8 @@ function dropLoot(e) {
   const count = e.kind === 'boss' ? 8 : e.elite ? 3 : 1;
   const value = Math.ceil(e.data.xp * (1 + .055 * (run.floor - 1)) * (e.elite ? 2.4 : e.summoned ? .48 : 1) * (hasModifier('famine') ? 1.25 : 1) / count);
   for (let i = 0; i < count; i++) addDrop(pos.x + random(-.82,.82), pos.z + random(-.82,.82), value, false);
-  if (e.kind === 'boss' || Math.random() < (player.hp < player.maxHP * .45 ? .39 : .23) * (hasModifier('famine') ? .5 : 1)) {
+  const healChance = (player.hp < player.maxHP * .45 ? .39 : .23) + (run.assistFloor === run.floor ? .15 : 0);
+  if (e.kind === 'boss' || Math.random() < healChance * (hasModifier('famine') ? .5 : 1)) {
     addDrop(pos.x + .48, pos.z + .47, e.kind === 'boss' ? 32 : 9, true);
   }
 }
@@ -1688,6 +2115,7 @@ function gainXP(amount) {
     player.xp -= xpNeeded(player.level);
     player.level++;
     run.pending.push('level');
+    if (player.level <= 25 && player.level % 5 === 0) run.pending.push('awaken');
   }
 }
 function updateDrops(dt) {
@@ -1721,6 +2149,15 @@ function healPlayer(amount, show = true) {
 }
 function hurtPlayer(amount) {
   if (player.invul > 0 || player.dashTime > 0 || mode !== 'play') return;
+  if (run.terrain?.exposed) amount *= 1.2;
+  if (player.shieldT > 0) {
+    amount *= .4;
+    const absorbed = Math.min(player.shield, amount);
+    player.shield -= absorbed;
+    amount -= absorbed;
+    if (absorbed) shock(player.root.position.x, player.root.position.z, 1.4, 0x7ee6fa, .25);
+    if (amount <= 0) { player.invul = .22; return; }
+  }
   player.hp = Math.max(0, player.hp - amount * player.stats.armor);
   player.invul = .54;
   hurt = .90;
@@ -1728,8 +2165,24 @@ function hurtPlayer(amount) {
   sound('hurt');
   const { x, z } = player.root.position;
   sparks(x, 1.0, z, 0xff6352, 21, 5.3, .23);
+  if (relicOwned('r_frost_shell') && player.shellCd <= 0) {
+    player.shellCd = 6;
+    shock(x, z, 3.2, 0xa7ecff);
+    for (const e of mobList) if (!e.dead && distance(e.root.position, { x, z }) < 3.2) e.slow = Math.max(e.slow, 2.2);
+  }
+  if (bonus('thorn')) splashEnemies(x, z, 2.8, amount * .4 * bonus('thorn'), 'thorn', 0xc8ec97);
   if (player.hp > 0) return;
-  if (bonus('phoenix') && run.revives === 0) {
+  if (awakened('aw_revenant') && !run.awakeningRevive) {
+    run.awakeningRevive = true;
+    player.invul = 2.3;
+    healPlayer(player.maxHP * .4);
+    announce('亡语', '从回响中归来');
+  } else if (meta.unlocks.includes('revive') && !run.altarRevive) {
+    run.altarRevive = true;
+    player.invul = 2.3;
+    healPlayer(player.maxHP * .5);
+    announce('不屈', '祭坛的回响庇护了你');
+  } else if (bonus('phoenix') && run.revives === 0) {
     run.revives++;
     player.invul = 2.3;
     healPlayer(player.maxHP * .68);
@@ -1812,6 +2265,8 @@ function aimAtPointer() {
 }
 function updatePlayer(dt) {
   const p = player.root.position, s = player.stats;
+  const oldX = p.x, oldZ = p.z;
+  updateExtraSkills(dt);
   player.slowT = Math.max(0, player.slowT - dt);
   player.invul = Math.max(0, player.invul - dt);
   player.dashCD = Math.max(0, player.dashCD - dt);
@@ -1829,6 +2284,7 @@ function updatePlayer(dt) {
   if (input.dash && player.dashCD <= 0) {
     player.dashCD = s.dashCD;
     player.dashTime = .185;
+    player.swiftT = 1.2;
     player.invul = Math.max(.28, player.invul);
     player.dashX = norm ? movingX / norm : aim.x;
     player.dashZ = norm ? movingZ / norm : aim.z;
@@ -1844,7 +2300,8 @@ function updatePlayer(dt) {
   if (player.dashTime > 0) {
     player.dashTime -= dt;
     const x = p.x, z = p.z;
-    place(p, player.dashX * 24.5 * dt, player.dashZ * 24.5 * dt, .49);
+    const dashSpeed = hasModifier('slick') ? 30.625 : 24.5;
+    place(p, player.dashX * dashSpeed * dt, player.dashZ * dashSpeed * dt, .49);
     if (Math.random() < dt * 85) sparks(p.x, .55, p.z, 0x55eee6, 3, 2.1, .23, .27);
     if (s.dashHit) for (const e of mobList) {
       const pos = e.root.position;
@@ -1854,8 +2311,12 @@ function updatePlayer(dt) {
       }
     }
   } else {
-    const speed = s.speed * (player.slowT > 0 ? .72 : 1);
-    place(p, dx * speed * dt, dz * speed * dt, .49);
+    const speed = s.speed * (player.slowT > 0 ? .72 : 1) * (player.phaseT > 0 ? 1.4 : 1);
+    if (hasModifier('slick')) {
+      player.slideX = lerp(player.slideX ?? 0, dx, 1 - Math.exp(-8 * dt));
+      player.slideZ = lerp(player.slideZ ?? 0, dz, 1 - Math.exp(-8 * dt));
+      place(p, player.slideX * speed * dt, player.slideZ * speed * dt, .49);
+    } else place(p, dx * speed * dt, dz * speed * dt, .49);
   }
   if ((input.fire || (input.auto && run.alive > 0)) && player.fireCD <= 0) shoot();
   player.stride += dt * (norm ? 13 : 4);
@@ -1871,7 +2332,50 @@ function updatePlayer(dt) {
   player.halo.scale.setScalar(player.dashTime > 0 ? 1.22 : .96 + .055 * Math.sin(worldTime * 5));
   player.body.visible = player.invul < .05 || player.dashTime > 0 || Math.sin(worldTime * 49) > -.66;
   playerLight.position.set(p.x, 2.9, p.z);
+  if (relicOwned('r_thunder_ring')) player.charge = Math.min(6, player.charge + Math.hypot(p.x - oldX, p.z - oldZ));
   updateBlades(dt);
+}
+function castExtraSkill(slot) {
+  const id = run.skills[slot], p = player.root.position;
+  if (mode !== 'play' || !id || run.skillCd[slot] > 0) return;
+  run.skillCd[slot] = SKILLS[slot].cd;
+  if (id === 'guard_shield') {
+    player.shield = 45; player.shieldT = 3;
+    shock(p.x, p.z, 3.1, 0x8aeefa);
+  } else if (id === 'guard_phase') {
+    player.phaseT = 1.2; player.invul = Math.max(player.invul, 1.2);
+    shock(p.x, p.z, 2.3, 0xbfaaff);
+  } else if (id === 'hunt_volley') {
+    player.volley = { angle: Math.atan2(aim.z, aim.x), shot: 0, time: 0, group: { bossHits: 0 } };
+  } else if (id === 'hunt_blades') {
+    player.huntBladeT = 10;
+    rebuildStats();
+  }
+  sound('nova');
+}
+function updateExtraSkills(dt) {
+  for (const slot of Object.keys(SKILLS)) run.skillCd[slot] = Math.max(0, run.skillCd[slot] - dt);
+  player.phaseT = Math.max(0, player.phaseT - dt);
+  player.shellCd = Math.max(0, player.shellCd - dt);
+  player.swiftT = Math.max(0, player.swiftT - dt);
+  if (player.shieldT > 0) {
+    player.shieldT -= dt;
+    const p = player.root.position;
+    for (const b of hostile) if (b.life > 0 && squared(b.x - p.x, b.z - p.z) < 3.1 ** 2) b.life = 0;
+  }
+  if (player.huntBladeT > 0) {
+    player.huntBladeT -= dt;
+    if (player.huntBladeT <= 0) rebuildStats();
+  }
+  const volley = player.volley;
+  if (!volley) return;
+  volley.time += dt;
+  while (volley.shot < 9 && volley.shot * .04375 <= volley.time) {
+    const p = player.root.position, angle = volley.angle + (volley.shot - 4) * .10;
+    launchBolt(p.x + Math.cos(angle) * .73, p.z + Math.sin(angle) * .73, angle, .65, volley.group);
+    volley.shot++;
+  }
+  if (volley.shot === 9) player.volley = null;
 }
 function updateBlades(dt) {
   const p = player.root.position;
@@ -1882,8 +2386,9 @@ function updateBlades(dt) {
     blade.rotation.set(.16, -angle, .32);
     for (const e of mobList) {
       if (e.dead || e.bladeTime > 0 || distance(blade.position, e.root.position) > e.r + .43) continue;
-      e.bladeTime = .28;
-      damageEnemy(e, 17 + 7 * bonus('orbit'), 'blade');
+      const temporary = i >= bonus('orbit') * 2;
+      e.bladeTime = temporary ? .6 : .28;
+      damageEnemy(e, temporary ? 14 : 17 + 7 * bonus('orbit'), 'blade');
     }
   });
 }
@@ -1965,18 +2470,19 @@ function reactToNova(e, element, power) {
 
 function shoot() {
   const p = player.root.position, s = player.stats;
-  player.fireCD = s.fireInterval;
+  player.fireCD = s.fireInterval / (1 + (player.swiftT > 0 ? .30 * bonus('swift') : 0));
   player.recoil = 1;
   player.shots++;
   const x = p.x + aim.x * .72, z = p.z + aim.z * .72;
   const center = Math.atan2(aim.z, aim.x);
   const storm = bonus('storm');
   const ringShots = storm && player.shots % 4 === 0 ? 11 + storm * 4 : 0;
-  const volley = run.zoneIndex === 0 && run.boss && (s.shots > 1 || ringShots) ? { bossHits: 0 } : null;
+  const volley = run.boss && (s.shots > 1 || s.fullShot || ringShots) ? { bossHits: 0 } : null;
   for (let i = 0; i < s.shots; i++) {
     const offset = i - (s.shots - 1) / 2;
     launchBolt(x, z, center + offset * .128, Math.max(.60, 1 - Math.abs(offset) * .23), volley);
   }
+  if (s.fullShot) launchBolt(x, z, center, 1, volley);
   if (ringShots) {
     for (let i = 0; i < ringShots; i++) launchBolt(p.x, p.z, center + i * TAU / ringShots, .72, volley);
     shock(p.x, p.z, 2.2, 0x90e9ff, .26);
@@ -1992,10 +2498,11 @@ function launchBolt(x, z, angle, scale, volley) {
   b.speed = s.bulletSpeed;
   b.life = 1.12;
   b.r = s.bulletRadius;
-  b.damage = s.damage * scale;
+  b.damage = s.damage * scale * (player.charge >= 6 ? 1.4 : 1);
+  if (player.charge >= 6) player.charge = 0;
   b.volley = volley;
   b.penetration = s.penetration;
-  b.ricochet = s.ricochet;
+  b.ricochet = s.ricochet + Number(relicOwned('r_thunder_bead') && Math.random() < .15);
   b.hits.length = 0;
 }
 function fireHostile(x, z, angle, speed, damage, radius = .20, hex = false) {
@@ -2050,17 +2557,19 @@ function updateProjectiles(dt) {
         if (t < first) { first = t; target = e; }
       }
       if (!target) break;
-      const critical = Math.random() < player.stats.crit;
+      const critical = Math.random() < player.stats.crit + (target.slow > 0 && player.stats.frostResonance ? .10 : 0);
       b.hits.push(target);
       const hitIndex = b.volley && target === run.boss ? b.volley.bossHits++ : 0;
       const overlap = hitIndex === 0 ? 1 : hitIndex === 1 ? .55 : .32;
       damageEnemy(target, b.damage * overlap * (critical ? player.stats.critDamage : 1), 'bolt', critical, -b.dx, -b.dz);
       if (b.penetration <= 0) b.life = 0;
+      else if (relicOwned('r_edge_pierce')) b.damage *= .85;
       else b.penetration--;
     }
     if (b.life <= 0) continue;
     b.x = lerp(b.x, tx, limit); b.z = lerp(b.z, tz, limit);
     if (limit < 1) {
+      if (block?.vine) damageVine(block.vine, b.damage * (block.center ? 2 : 1));
       if (b.ricochet <= 0) { b.life = 0; continue; }
       b.ricochet--;
       if (block) {
@@ -2101,6 +2610,11 @@ function updateProjectiles(dt) {
 }
 function damageEnemy(e, amount, source, critical = false, hitX, hitZ) {
   if (e.dead || amount <= 0) return;
+  const s = player.stats;
+  amount *= s.enemyTaken * (e.etch > 0 ? 1.12 : 1) * (e.burn > 0 && s.emberResonance ? 1.10 : 1);
+  if (e.slow > 0) amount = amount * (1 + .18 * relicOwned('r_frost_core') + .25 * awakened('aw_frostbite')) +
+    (source === 'bolt' ? 6 * bonus('shard') : 0);
+  if (e.hp < e.maxHP * .25) amount *= 1 + .6 * bonus('exec');
   if (e.data.shield && source === 'bolt') {
     if (e.shieldBroken > 0) amount *= 1.35;
     else if (Math.sin(e.root.rotation.y) * hitX + Math.cos(e.root.rotation.y) * hitZ >= Math.cos(55 * Math.PI / 180)) {
@@ -2115,6 +2629,17 @@ function damageEnemy(e, amount, source, critical = false, hitX, hitZ) {
     amount -= absorbed;
     if (!amount) return;
   }
+  if (e.kind === 'boss' && run.floor >= 10) {
+    const pressure = e.hitPressure ?? 0;
+    const knee = e.maxHP * .058;
+    const raw = amount;
+    amount /= 1 + pressure / knee;
+    e.hitPressure = pressure + raw;
+  }
+  if (e.finale && e.stage < 3) {
+    const gate = e.maxHP * (e.stage === 1 ? .6 : .25);
+    amount = Math.min(amount, Math.max(1, e.hp - gate));
+  }
   const dealt = Math.min(e.hp, amount);
   e.hp -= dealt;
   e.flash = .08;
@@ -2128,27 +2653,43 @@ function damageEnemy(e, amount, source, critical = false, hitX, hitZ) {
     sound('hit', x);
     markElement(e, run.element);
     if (bonus('frost')) e.slow = Math.max(e.slow, 1.38);
-    if (bonus('burn')) e.burn = Math.max(e.burn, 3);
+    if (awakened('aw_frostbite') || relicOwned('r_frost_mirror') && Math.random() < .12) e.slow = Math.max(e.slow, 1.6);
+    if (bonus('burn') || relicOwned('r_ember_heart') && Math.random() < .12) e.burn = Math.max(e.burn, 3 + 1.5 * relicOwned('r_ember_keep'));
     if (player.stats.leech) healPlayer(dealt * player.stats.leech, false);
   }
   if (e.hp <= 0) killEnemy(e);
-  else if (e.kind === 'boss' && !e.enrage && e.hp <= e.maxHP * .5) enrageBoss(e);
-  if (source === 'bolt' && bonus('chain') && Math.random() < .19 + .095 * bonus('chain')) {
-    markElement(e, 'thunder');
-    chainAttack(e, amount);
+  else if (e.kind === 'boss' && !e.enrage && e.hp <= e.maxHP * (e.finale ? .6 : .5)) enrageBoss(e);
+  else if (e.kind === 'boss' && e.stage === 2 && e.hp <= e.maxHP * (e.finale ? .25 : .2) && (e.finale || run.floor === 20)) {
+    e.stage = 3; e.stageFresh = true; e.encore = 0;
+    endTell(e);
+    e.state = 'hunt'; e.timer = .25; e.model.position.y = 0;
+    if (e.finale) growVines(2);
+    else addHazard(0,0,12,6,e.damage * .6,zone.fire,1.3,'outer');
+    announce(e.finale ? '第三幕 · 万声返场' : '终焉', e.name);
+    sound('boss');
+  }
+  if (source === 'bolt') {
+    player.hitCount++;
+    const hub = relicOwned('r_thunder_hub') && player.hitCount % 8 === 0;
+    const coil = bonus('coil') && player.hitCount % 10 === 0;
+    if (hub || coil || s.chainChance > 0 && Math.random() < s.chainChance) {
+      markElement(e, 'thunder');
+      chainAttack(e, hub || coil ? 22 + 7 * bonus('coil') : amount);
+    }
   }
 }
 function chainAttack(origin, damage) {
   const visited = new Set([origin]);
   let from = origin.root.position;
-  for (let i = 0; i < 2 + bonus('chain'); i++) {
-    let bestTarget, bestDistance = 5.2 + bonus('chain') * .50;
+  for (let i = 0; i < 2 + bonus('chain') + player.stats.chainExtra; i++) {
+    let bestTarget, bestDistance = (5.2 + bonus('chain') * .50) * (player.stats.thunderResonance ? 1.3 : 1);
     for (const e of mobList) {
       if (e.dead || visited.has(e)) continue;
       const d = distance(e.root.position, from);
       if (d < bestDistance) { bestTarget = e; bestDistance = d; }
     }
     if (!bestTarget) break;
+    if (relicOwned('r_thunder_etch')) bestTarget.etch = 3;
     const p = bestTarget.root.position;
     lightning(from.x, from.z, p.x, p.z);
     markElement(bestTarget, 'thunder');
@@ -2162,22 +2703,43 @@ function killEnemy(e) {
   e.dead = true;
   run.alive--;
   run.kills++;
-  scene.remove(e.root);
-  if (e.fx) e.fx.t = e.fx.duration;
-  dropLoot(e);
+  run.streak = run.seconds - run.lastKill <= 3 ? run.streak + 1 : 1;
+  run.bestStreak = Math.max(run.bestStreak, run.streak);
+  run.lastKill = run.seconds;
+  removeEnemy(e);
+  endTell(e);
+  if (e.data.xp > 0) dropLoot(e);
   const { x, z } = e.root.position;
   if (e.data.split) for (const side of [-1, 1]) spawnEnemy(e.data.split, clamp(x + side * 1.2,-21,21), clamp(z + side * .65,-16,16), true);
   const boss = e.kind === 'boss';
+  if (e.data.blast) addHazard(x,z,2.2,.14,e.damage,zone.fire,.75);
+  if (hasModifier('applause')) for (const target of mobList) if (!target.dead) target.applause = 1.7;
+  healPlayer(2 * bonus('bloom'), false);
+  if (e.burn > 0 && (bonus('pyre') || relicOwned('r_ember_bone'))) splashEnemies(x, z, 2.4, 18 * (bonus('pyre') + relicOwned('r_ember_bone')), 'pyre', 0xffab72);
+  if (e.slow > 0 && relicOwned('r_frost_shatter')) splashEnemies(x, z, 2.6, 22, 'shatter', 0x9be2fc);
+  if (boss) run.pending.push('relic');
+  else if (e.elite && Math.random() < .25) {
+    const [relic] = chooseRelics(1);
+    if (relic) gainRelic(relic);
+    else gainXP(15);
+  }
   const color = e.elite ? 0xffc35d : boss ? zone.fire : e.data.color;
   sparks(x, .78, z, color, boss ? 95 : e.elite ? 34 : 20, boss ? 10 : 5.1, boss ? .48 : .29, boss ? 1.12 : .54);
   shock(x, z, boss ? 7.4 : 1.9, color, boss ? .89 : .35);
   impact(boss ? .070 : .035, boss ? .83 : .18);
   sound('kill', x);
   if (boss) {
+    run.bossKills++;
+    if (run.floor === 20 && !meta.cleared20) {
+      meta.cleared20 = true;
+      meta.deepest = Math.max(20, meta.deepest);
+      saveMeta();
+    }
     run.boss = null;
+    if (run.floor === MAX_FLOOR && !e.finale) run.finaleReady = true;
     for (const b of hostile) b.life = 0;
     sound('boss');
-    announce('首领已陨落', zone.boss);
+    announce('首领已陨落', e.name ?? zone.boss);
   }
   const corpse = bonus('corpse');
   if (corpse) {
@@ -2186,6 +2748,12 @@ function killEnemy(e) {
     for (const target of mobList) {
       if (!target.dead && distance(e.root.position, target.root.position) < radius + target.r) damageEnemy(target, 20 + 10 * corpse, 'corpse');
     }
+  }
+}
+function splashEnemies(x, z, r, amount, source, color) {
+  shock(x, z, r, color, .33);
+  for (const target of mobList) if (!target.dead && squared(target.root.position.x - x, target.root.position.z - z) <= (r + target.r) ** 2) {
+    damageEnemy(target, amount, source);
   }
 }
 function faceEnemy(e, dx, dz, dt) {
@@ -2220,6 +2788,10 @@ function dashEnemy(e, distanceToMove, radius, ghost) {
 function endTell(e) {
   if (e.fx) e.fx.t = e.fx.duration;
   e.fx = null;
+  if (e.extraTells) {
+    for (const effect of e.extraTells) effect.t = effect.duration;
+    e.extraTells = null;
+  }
 }
 function updateEnemy(e, dt) {
   if (e.dead) return;
@@ -2229,6 +2801,8 @@ function updateEnemy(e, dt) {
     return;
   }
   e.flash = Math.max(0, e.flash - dt);
+  e.applause = Math.max(0,(e.applause ?? 0) - dt);
+  e.etch = Math.max(0, (e.etch ?? 0) - dt);
   e.shieldBroken = Math.max(0, e.shieldBroken - dt);
   if (e.shield) e.shield.visible = e.shieldBroken <= 0;
   e.bladeTime = Math.max(0, e.bladeTime - dt);
@@ -2240,14 +2814,16 @@ function updateEnemy(e, dt) {
     if (e.burnTick <= 0) {
       e.burnTick += .30;
       sparks(e.root.position.x, 1.05, e.root.position.z, 0xff7f37, 2, 2, .18, .32);
-      damageEnemy(e, Math.max(1.2, 2.4 * bonus('burn')), 'burn');
+      damageEnemy(e, Math.max(1.2, 2.4 * bonus('burn')) * (1 + .5 * relicOwned('r_ember_keep') + .2 * relicOwned('r_spore')) *
+        (player.stats.emberResonance ? 1.8 : 1), 'burn');
       if (e.dead) return;
     }
   } else e.burnTick = 0;
   const isBoss = e.kind === 'boss';
   const p = player.root.position, pos = e.root.position;
   const r = Math.max(.001, distance(p, pos)), dx = (p.x - pos.x) / r, dz = (p.z - pos.z) / r;
-  const speed = e.speed * (e.slow > 0 ? (isBoss ? .79 : Math.max(.39, .74 - (bonus('frost') - 1) * .095)) : 1);
+  const speed = e.speed * (e.slow > 0 ? (isBoss ? .79 : Math.max(.39, .74 - (bonus('frost') - 1) * .095 -
+    (player.stats.frostResonance ? .15 : 0))) : 1) * (e.applause > 0 ? 1.22 : 1);
   e.timer -= dt;
   if (isBoss) updateBoss(e, dt, r, dx, dz, speed);
   else if (e.kind === 'stalker') {
@@ -2342,6 +2918,22 @@ function updateEnemy(e, dt) {
 }
 function updateSpecialEnemy(e, dt, r, dx, dz, speed) {
   const p = player.root.position, pos = e.root.position, data = e.data;
+  if (e.life !== undefined && (e.life -= dt) <= 0) {
+    e.dead = true; run.alive--; removeEnemy(e); endTell(e);
+    return;
+  }
+  if (e.state === 'steam') {
+    e.steamTick -= dt;
+    if (e.steamTick <= 0) {
+      e.steamTick += .3;
+      const forward = (p.x - pos.x) * e.dx + (p.z - pos.z) * e.dz;
+      const lateral = Math.abs((p.x - pos.x) * e.dz - (p.z - pos.z) * e.dx);
+      if (forward > 0 && forward < data.range && lateral < .45 + forward * .26) hurtPlayer(e.damage);
+      sparks(pos.x + e.dx * 2,.75,pos.z + e.dz * 2,data.color,9,3.4,.25,.36);
+    }
+    if (e.timer <= 0) { endTell(e); e.state = 'hunt'; e.timer = data.cd; }
+    return;
+  }
   if (e.state === 'leap') {
     const t = clamp(1 - e.timer / .42, 0, 1);
     place(pos, lerp(e.fromX, e.targetX, t) - pos.x, lerp(e.fromZ, e.targetZ, t) - pos.z, e.r, true);
@@ -2358,12 +2950,20 @@ function updateSpecialEnemy(e, dt, r, dx, dz, speed) {
     if (data.action === 'jump') { e.state = 'leap'; e.timer = .42; return; }
     endTell(e);
     const angle = Math.atan2(e.dz, e.dx);
-    if (data.action === 'beam' || data.action === 'steam') {
+    if (data.action === 'steam') {
+      e.state = 'steam'; e.timer = 1.2; e.steamTick = 0;
+      e.fx = telegraph(pos.x,pos.z,1.2,data.color,e.timer,e.dx,e.dz,data.range);
+      return;
+    }
+    if (data.action === 'beam') {
       const x = pos.x + e.dx * data.range, z = pos.z + e.dz * data.range;
-      telegraph(pos.x, pos.z, data.action === 'beam' ? .34 : .85, data.color, .18, e.dx, e.dz, data.range);
-      if (segmentHit(pos.x, pos.z, x, z, p.x, p.z, data.action === 'beam' ? .68 : 1.10) !== Infinity) hurtPlayer(e.damage);
+      telegraph(pos.x, pos.z, .34, data.color, .18, e.dx, e.dz, data.range);
+      if (segmentHit(pos.x, pos.z, x, z, p.x, p.z, .68) !== Infinity) hurtPlayer(e.damage);
     } else if (data.action === 'hex') fireHostile(pos.x, pos.z, angle, 5.2, 0, .3, true);
     else if (data.action === 'ring') ringFire(e, data.shots, 8.5, 1);
+    else if (data.action === 'fan') {
+      for (const shift of [-.2,0,.2]) fireHostile(pos.x,pos.z,angle + shift,9,e.damage,.19);
+    }
     else if (data.action === 'zap') {
       shock(pos.x, pos.z, 2.4, data.color);
       if (distance(p, pos) < 2.4) hurtPlayer(e.damage);
@@ -2375,6 +2975,17 @@ function updateSpecialEnemy(e, dt, r, dx, dz, speed) {
     return;
   }
   faceEnemy(e, dx, dz, dt);
+  if (data.action === 'hex' && r < 4 && worldTime >= (e.hexWarp ?? 0)) {
+    e.hexWarp = worldTime + 6;
+    const [x,z] = polar(Math.atan2(-dz,-dx) + e.turn * .55,8);
+    const target = { x: clamp(p.x+x,-20,20), z: clamp(p.z+z,-15,15) };
+    if (obstacleList.every(o => distance(o,target) > o.r + e.r)) {
+      shock(pos.x,pos.z,1.4,data.color);
+      pos.set(target.x,0,target.z);
+      shock(pos.x,pos.z,1.4,data.color);
+      return;
+    }
+  }
   const radial = data.keep ? clamp((r - data.keep) * .22, -.85, .85) : 1;
   if (speed > 0) moveEnemy(e, dx * radial - (data.keep ? dz * e.turn * .5 : 0), dz * radial + (data.keep ? dx * e.turn * .5 : 0), speed, dt);
   if (data.action === 'ambush') {
@@ -2395,7 +3006,14 @@ function updateSpecialEnemy(e, dt, r, dx, dz, speed) {
 
 function addHazard(x, z, r, life, damage, color, delay = 0, shape = 'circle') {
   if (hazards.length >= 12) return;
-  hazards.push({ x, z, r, life, damage, color, delay, shape, tick: 0, fx: telegraph(x, z, r, color, delay + life) });
+  const hazard = { x, z, r, life, damage, color, delay, shape, tick: 0 };
+  if (shape === 'outer') {
+    const material = basic(color, .68);
+    const obj = ground(scene,'ring',material,x,z,20,.056);
+    hazard.fx = { obj, material, t: 0, duration: delay + life, update: () => obj.scale.setScalar(12 + Math.max(0,hazard.life) * 1.33) };
+    effects.push(hazard.fx);
+  } else hazard.fx = telegraph(x,z,r,color,delay + life);
+  hazards.push(hazard);
 }
 function updateHazards(dt) {
   const p = player.root.position;
@@ -2423,14 +3041,21 @@ function enrageBoss(e) {
   e.timer = .24;
   e.stage = 2;
   e.stageFresh = true;
+  if (e.finale) {
+    growVines(2);
+    addHazard(-7, -5, 3.25, 6, e.damage * .55, 0xffb17b, .85);
+    addHazard(7, 5, 3.25, 6, e.damage * .55, 0xffb17b, .85);
+  }
   impact(.07, .75);
   sound('boss');
-  announce('首领狂暴', zone.boss);
+  announce(e.finale ? '第二幕 · 旧日回响' : '首领狂暴', e.name ?? zone.boss);
   shock(x, z, 6.1, zone.fire, .75);
   sparks(x, 1.3, z, zone.fire, 44, 6.2, .36, .66);
 }
 function updateBoss(e, dt, r, dx, dz, speed) {
   const pos = e.root.position, p = player.root.position;
+  e.hitPressure = (e.hitPressure ?? 0) * Math.exp(-2.4 * dt);
+  if (e.finale && e.stage === 3) e.encore -= dt;
   const phase = e.enrage ? 2 : 1;
   if (e.state === 'hunt') {
     faceEnemy(e, dx, dz, dt);
@@ -2482,15 +3107,18 @@ function updateBoss(e, dt, r, dx, dz, speed) {
 function beginBossMove(e, p, dx, dz) {
   const pos = e.root.position;
   const [first, next = [], last = []] = e.moveDeck;
-  const deck = e.stage === 3 ? [...first, ...next, ...last] : e.enrage ? [...first, ...next] : first;
+  const deck = e.enrage ? [...first, ...next] : first;
   if (e.stageFresh) {
     e.move = (e.stage === 3 ? last[0] : next[0]) ?? first[0];
     e.stageFresh = false;
+  } else if (e.finale && e.stage === 3 && e.encore <= 0) {
+    e.move = 'encore';
   } else {
     e.move = deck[e.moveCursor++ % deck.length];
     if (e.move === e.previousMove) e.move = deck[e.moveCursor++ % deck.length];
   }
   e.previousMove = e.move;
+  if (e.move === 'encore') e.encore = 8;
   e.state = 'tell';
   e.dx = dx; e.dz = dz;
   e.root.rotation.y = Math.atan2(dx, dz);
@@ -2513,6 +3141,10 @@ function beginBossMove(e, p, dx, dz) {
     e.fromX = pos.x; e.fromZ = pos.z;
     e.duration = e.enrage ? .54 : .67;
     e.fx = telegraph(e.targetX, e.targetZ, e.action, 0xff7349, e.timer + e.duration);
+  } else if (e.move === 'cage') {
+    const sides = [[-3.5,-3.5,1,0],[-3.5,3.5,1,0],[-3.5,-3.5,0,1],[3.5,-3.5,0,1]];
+    const gap = Math.floor(Math.random() * sides.length);
+    e.extraTells = sides.map(([x,z,dx,dz], i) => telegraph(e.targetX+x,e.targetZ+z,.18,i === gap ? 0x8fe8dc : zone.fire,e.timer,dx,dz,7));
   } else if (e.move === 'blink') {
     place(pos, p.x - aim.x * 2.2 - pos.x, p.z - aim.z * 2.2 - pos.z, e.r, true);
     e.fx = telegraph(pos.x, pos.z, 3.4, zone.fire, e.timer);
@@ -2557,7 +3189,7 @@ function executeSpecialBossMove(e, move) {
     const angle = Math.atan2(e.dz, e.dx);
     for (let i = -3; i <= 3; i++) fireHostile(pos.x, pos.z, angle + .17 * i, 12, d * .8);
   } else if (move === 'cage') {
-    if (distance(p, { x, z }) < 3.5) hurtPlayer(d * 1.3);
+    if (Math.abs(p.x - x) < 3.5 && Math.abs(p.z - z) < 3.5) hurtPlayer(d * 1.3);
     shock(x, z, 3.5, color);
   } else if (move === 'spike' || move === 'lance') {
     for (let i = 1; i <= 5; i++) addHazard(pos.x + e.dx * i * 2.2, pos.z + e.dz * i * 2.2, 1.55, .12, d * 1.05, color, i * .12);
@@ -2575,8 +3207,15 @@ function executeSpecialBossMove(e, move) {
     shock(pos.x, pos.z, 3.4, color);
     if (distance(p, pos) < 3.4) hurtPlayer(d * 1.25);
   } else if (move === 'mirror' || move === 'encore') {
-    const kind = move === 'mirror' ? 'orbitter' : 'puppet';
-    for (const side of [-1,1]) spawnEnemy(kind, clamp(pos.x + side * 4, -20, 20), clamp(pos.z, -15, 15), true);
+    const kind = move === 'mirror' ? 'reflection' : 'puppet';
+    for (const side of [-1,1]) {
+      const minion = spawnEnemy(kind, clamp(pos.x + side * 4, -20, 20), clamp(pos.z, -15, 15), true);
+      if (minion && move === 'mirror') {
+        minion.hp = minion.maxHP = minion.trail = Math.round(e.maxHP * .08);
+        minion.damage = e.damage * .35;
+        minion.life = 14;
+      }
+    }
     if (move === 'encore') executeSpecialBossMove(e, ['eruption','heat','spike','zone'][Math.floor(Math.random() * 4)]);
   } else if (move === 'pull' || move === 'magnet') {
     const tx = move === 'magnet' ? Math.sign(p.x || 1) * 8 : pos.x, tz = move === 'magnet' ? p.z : pos.z;
@@ -2602,7 +3241,10 @@ function textIf(el, value) {
   const next = String(value);
   if (el.textContent !== next) el.textContent = next;
 }
-function bar(el, progress) { el.style.transform = `scaleX(${clamp(progress, 0, 1).toFixed(4)})`; }
+function bar(el, progress) {
+  const next = `scaleX(${clamp(progress, 0, 1).toFixed(4)})`;
+  if (el.style.transform !== next) el.style.transform = next;
+}
 function updateHUD(dt) {
   if (!run || !player.stats) return;
   const s = player.stats;
@@ -2614,7 +3256,7 @@ function updateHUD(dt) {
   textIf(dom['wave-text'], run.phase === 'trial' ? `权柄试炼 · 剩余 ${run.alive}` :
     run.phase === 'portal' ? '传送门已开启' : run.phase === 'cleared' ? '已清空' :
     run.wave === 0 ? '敌人接近中' : `第 ${run.wave} / ${run.waveCount} 波 · 剩余 ${run.alive + run.spawn.length}`);
-  textIf(dom.level, `等级 ${player.level}`);
+  textIf(dom.level, `等级 ${player.level}${player.slowT > 0 ? ' · 被缚' : player.shieldT > 0 ? ' · 护盾' : ''}`);
   textIf(dom['health-text'], `${Math.ceil(player.hp)} / ${player.maxHP}`);
   player.hpTrail = Math.max(player.hp, lerp(player.hpTrail, player.hp, 1 - Math.exp(-3.8 * dt)));
   bar(dom['health-fill'], player.hp / player.maxHP);
@@ -2625,12 +3267,19 @@ function updateHUD(dt) {
   textIf(dom['nova-text'], player.novaCD > .04 ? `${player.novaCD.toFixed(1)} 秒` : '就绪');
   bar(dom['dash-fill'], 1 - player.dashCD / s.dashCD);
   bar(dom['nova-fill'], 1 - player.novaCD / s.novaCD);
+  for (const [slot, skill] of Object.entries(SKILLS)) {
+    const cd = run.skillCd[slot];
+    dom[`${slot}-button`].disabled = !run.skills[slot];
+    textIf(dom[`${slot}-text`], !run.skills[slot] ? `第 ${skill.floor} 层` : cd > .04 ? `${cd.toFixed(1)} 秒` : '就绪');
+    bar(dom[`${slot}-fill`], run.skills[slot] ? 1 - cd / skill.cd : 0);
+  }
   dom['auto-fire'].setAttribute('aria-pressed', String(input.auto));
   const boss = run.boss;
   dom['boss-hud'].hidden = !boss;
   if (boss) {
-    textIf(dom['boss-name'], boss.enrage ? `${zone.boss} · 狂暴` : zone.boss);
-    textIf(dom['boss-move'], boss.state === 'hunt' ? '' : BOSS_MOVES[boss.move]?.[0] ?? '');
+    const name = boss.name ?? zone.boss;
+    textIf(dom['boss-name'], boss.stage === 3 ? `${name} · 第三阶段` : boss.enrage ? `${name} · 狂暴` : name);
+    textIf(dom['boss-move'], boss.state === 'hunt' ? boss.hitPressure > boss.maxHP * .12 ? '首领架势 · 连击减伤' : '' : BOSS_MOVES[boss.move]?.[0] ?? '');
     boss.trail = Math.max(boss.hp, lerp(boss.trail, boss.hp, 1 - Math.exp(-3.1 * dt)));
     bar(dom['boss-fill'], boss.hp / boss.maxHP);
     bar(dom['boss-trail'], boss.trail / boss.maxHP);
@@ -2662,6 +3311,16 @@ function drawMap() {
   }
   mapCtx.fillStyle = '#696367';
   for (const o of obstacleList) mapCtx.fillRect(sx(o.x) - 4, sz(o.z) - 4, 8, 8);
+  for (const hazard of hazards) {
+    mapCtx.beginPath();
+    mapCtx.arc(sx(hazard.x), sz(hazard.z), (hazard.shape === 'outer' ? 12 + Math.max(0,hazard.life) * 1.33 : hazard.r) * 5.1, 0, TAU);
+    if (hazard.delay > 0 || hazard.shape === 'outer') { mapCtx.strokeStyle = '#ff8eaa90'; mapCtx.stroke(); }
+    else { mapCtx.fillStyle = '#ed86b43d'; mapCtx.fill(); }
+  }
+  if (run.phase === 'vault') {
+    mapCtx.fillStyle = '#ffd98a';
+    for (const box of run.vaultBoxes) mapCtx.fillRect(sx(box.position.x) - 3, sz(box.position.z) - 3, 6, 6);
+  }
   for (const e of mobList) {
     if (e.dead) continue;
     const p = e.root.position, radius = e.kind === 'boss' ? 6 : e.elite ? 4.4 : 3.3;
@@ -2744,15 +3403,71 @@ function chooseOptions(exclude = []) {
 }
 function openBlessing(reason) {
   run.blessingReason = reason;
+  if (reason === 'relic' || reason === 'vault') {
+    const choices = chooseRelics();
+    if (!choices.length) {
+      gainXP(15);
+      if (reason === 'vault') finishVault();
+      return;
+    }
+    showRewardChoices('选择遗物', reason === 'vault' ? '幽库藏品 · 取走一件' : '击败强敌 · 取走一件', choices);
+    return;
+  }
+  if (reason === 'awaken') {
+    const pool = AWAKENINGS.filter(a => !awakened(a.id) && (!a.needs || bonus(a.needs) || a.id === 'aw_frostbite' && tagCount('frost') >= 2));
+    const choices = [];
+    while (pool.length && choices.length < 2) choices.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    if (choices.length) showRewardChoices('选择觉醒', `等级 ${player.level} · 选择本局被动`, choices);
+    return;
+  }
+  if (SKILLS[reason]) {
+    showRewardChoices(`选择${SKILLS[reason].name}技`, '本局持续生效 · 冷却独立计算', SKILLS[reason].choices);
+    return;
+  }
   run.choices = chooseOptions();
   if (!run.choices.length) return;
   mode = 'blessing';
   sound('level');
   renderBlessings();
 }
+function chooseRelics(count = 3) {
+  const pool = RELICS.filter(r => !relicOwned(r.id) && (!r.floor || r.floor <= run.floor));
+  const choices = [];
+  while (pool.length && choices.length < count) choices.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  return choices;
+}
+function gainRelic(relic) {
+  if (relicOwned(relic.id)) return;
+  run.relics.push(relic.id);
+  rebuildStats();
+  updateBuild();
+  announce(relic.name, `${RELIC_TAGS[relic.tag]}系遗物${tagCount(relic.tag) === 3 ? ' · 共鸣已激活' : ''}`);
+  sound('pickup');
+}
+function showRewardChoices(title, description, choices) {
+  run.choices = choices;
+  mode = 'blessing';
+  showModal(title, description, true);
+  const cards = document.createElement('div');
+  cards.id = 'cards';
+  choices.forEach((choice, i) => {
+    const button = document.createElement('button');
+    button.className = 'card';
+    button.style.setProperty('--rarity', rarities[choice.tier ?? 2].color);
+    button.innerHTML = `<span class="card-top"><span>${choice.tag ? RELIC_TAGS[choice.tag] : title}</span><kbd>${i + 1}</kbd></span>
+      <span class="card-rune" aria-hidden="true">${choice.name[0]}</span><strong>${choice.name}</strong>
+      <span class="card-description">${choice.description}</span>`;
+    button.addEventListener('click', () => takeBlessing(i));
+    cards.append(button);
+  });
+  dom['sheet-content'].append(cards);
+  cards.firstElementChild?.focus();
+  sound('level');
+}
 function renderBlessings() {
   const levelUp = run.blessingReason === 'level';
   const description = run.blessingReason === 'trial' ? '权柄试炼完成 · 领取额外祝福' :
+    run.blessingReason === 'start' ? '祭坛启程 · 领取开局祝福' :
     levelUp ? `灵魂升华 · 当前等级 ${player.level}` : `第 ${run.floor} 层已肃清 · 领取清层祝福`;
   showModal('选择祝福', description, true);
   const cards = document.createElement('div');
@@ -2776,7 +3491,7 @@ function renderBlessings() {
   cards.firstElementChild.focus({ preventScroll: true });
 }
 function rerollBlessings() {
-  if (mode !== 'blessing' || run.rerolls <= 0) return;
+  if (mode !== 'blessing' || run.rerolls <= 0 || !['level','clear','trial','start'].includes(run.blessingReason)) return;
   run.rerolls--;
   run.choices = chooseOptions(run.choices.map(b => b.id));
   sound('pickup');
@@ -2785,17 +3500,32 @@ function rerollBlessings() {
 function takeBlessing(index) {
   const choice = run.choices[index];
   if (mode !== 'blessing' || !choice) return;
-  run.build.set(choice.id, bonus(choice.id) + 1);
+  const reason = run.blessingReason;
+  if (reason === 'relic' || reason === 'vault') gainRelic(choice);
+  else if (reason === 'awaken') run.awakenings.push(choice.id);
+  else if (SKILLS[reason]) run.skills[reason] = choice.id;
+  else run.build.set(choice.id, bonus(choice.id) + 1);
   run.choices = [];
   rebuildStats();
   updateBuild();
   updateHUD(0);
   mode = 'play';
   clearModal();
+  if (reason === 'vault') finishVault();
   sound('pickup');
   if (run.pending.length) openBlessing(run.pending.shift());
+  else saveRun(false);
 }
 function updateBuild() {
+  const route = Object.keys(ROUTES).map(id => {
+    const count = routeCount(id);
+    return `${RELIC_TAGS[id]} ${count}/${count >= 3 ? 6 : 3}${count >= 6 ? '·成型' : count >= 3 ? '·激活' : ''}`;
+  }).join('　');
+  textIf(dom['route-pips'], route);
+  const relics = RELICS.filter(r => relicOwned(r.id));
+  dom['relic-bar'].hidden = !relics.length;
+  textIf(dom['relic-bar'], `遗物 ${relics.length} · ${Object.keys(RELIC_TAGS).filter(tag => tagCount(tag)).map(tag => `${RELIC_TAGS[tag]}${tagCount(tag)}${tagCount(tag) >= 3 ? ' 共鸣' : ''}`).join(' ')}`);
+  dom['relic-bar'].title = relics.map(r => r.name).join('、');
   dom.build.hidden = !run.build.size;
   dom['build-items'].replaceChildren();
   for (const b of blessings) {
@@ -2816,7 +3546,114 @@ function openPause() {
   showModal('游戏暂停', `第 ${run.floor} 层 · ${zone.name}`);
   modalAction('继续游戏', resumeGame, 'primary').focus();
   modalAction('操作与设置', () => openOptions('paused'));
+  const save = modalAction('保存并退出', () => { if (saveRun()) showTitle(); else textIf(dom['sheet-description'], '浏览器无法保存进度，可继续当前战斗。'); });
+  save.disabled = !canSave();
+  if (save.disabled) textIf(dom['sheet-description'], `第 ${run.floor} 层 · 进入新层或清场后可保存`);
   modalAction('返回标题', showTitle);
+}
+function canSave() { return run && ['entry','portal'].includes(run.phase) && run.pending.length === 0; }
+function snapshotRun() {
+  const p = player.root.position;
+  return {
+    v: 2, savedAt: Date.now(), seed: run.seed, floor: run.floor, phase: run.phase, element: run.element,
+    layout: run.layout, modifiers: run.modifiers.slice(), position: { x: p.x, z: p.z },
+    build: Object.fromEntries(run.build), relics: run.relics.slice(), awakenings: run.awakenings.slice(),
+    skills: { ...run.skills }, skillCd: { ...run.skillCd },
+    player: { hp: player.hp, level: player.level, xp: player.xp, dashCD: player.dashCD, novaCD: player.novaCD },
+    rerolls: run.rerolls, revives: run.revives, altarRevive: run.altarRevive, awakeningRevive: run.awakeningRevive,
+    trialDone: run.trialDone, vaultDone: run.vaultDone, seconds: run.seconds, kills: run.kills,
+    damage: run.damage, bossKills: run.bossKills, bestStreak: run.bestStreak,
+    seenModifiers: run.seenModifiers.slice(), seenZones: run.seenZones.slice(), assistFloor: run.assistFloor
+  };
+}
+function saveRun(show = false) {
+  if (!canSave()) return false;
+  const saved = writeStore(RUN_SAVE, snapshotRun());
+  if (show) {
+    textIf(dom['save-note'], saved ? `已归档 · 第 ${run.floor} 层` : '本次进度无法归档');
+    dom['save-note'].hidden = false;
+    run.saveNoteT = 1.6;
+  }
+  return saved;
+}
+function clearRun() { writeStore(RUN_SAVE, null); }
+function readRunSave() {
+  let raw;
+  try { raw = localStorage.getItem(RUN_SAVE); } catch { return { save: null, invalid: false }; }
+  if (raw === null || raw === 'null') return { save: null, invalid: false };
+  try {
+    const s = JSON.parse(raw);
+    if (s?.v === 2 && Number.isInteger(s.seed) && s.seed >= 0 && s.seed <= 0xffffffff &&
+        Number.isInteger(s.floor) && s.floor >= 1 && s.floor <= MAX_FLOOR && ['entry','portal'].includes(s.phase) &&
+        Object.hasOwn(arcana, s.element) && Number.isFinite(s.player?.hp)) return { save: s, invalid: false };
+  } catch { /* 旧文件或写入中断可能留下无法解析的数据。 */ }
+  return { save: null, invalid: true };
+}
+function loadRun() {
+  const { save: s } = readRunSave();
+  if (!s) {
+    showTitle();
+    return false;
+  }
+  const array = value => Array.isArray(value) ? value : [];
+  const numeric = (value, fallback = 0) => Number.isFinite(value) ? Math.max(0, value) : fallback;
+  newRun({ seed: s.seed, resume: true });
+  for (const b of blessings) if (Number.isInteger(s.build?.[b.id]) && s.build[b.id] > 0) run.build.set(b.id, Math.min(b.limit, s.build[b.id]));
+  run.relics = RELICS.filter(r => array(s.relics).includes(r.id)).map(r => r.id);
+  run.awakenings = AWAKENINGS.filter(a => array(s.awakenings).includes(a.id)).map(a => a.id);
+  for (const [slot, skill] of Object.entries(SKILLS)) {
+    run.skills[slot] = skill.choices.find(choice => choice.id === s.skills?.[slot])?.id ?? null;
+    run.skillCd[slot] = Math.min(skill.cd, numeric(s.skillCd?.[slot]));
+  }
+  for (const id of ['revives','seconds','kills','damage','bossKills','bestStreak']) run[id] = numeric(s[id]);
+  run.rerolls = numeric(s.rerolls, 3);
+  run.element = s.element;
+  run.altarRevive = s.altarRevive === true;
+  run.assistFloor = numeric(s.assistFloor);
+  run.seenModifiers = array(s.seenModifiers).filter(id => Object.hasOwn(MODIFIERS, id)).slice(-9);
+  run.seenZones = array(s.seenZones).filter(i => Number.isInteger(i) && i >= 0 && i < zones.length);
+  materials.bullet.color.setHex(arcana[run.element].color);
+  textIf(dom['nova-name'], arcana[run.element].nova);
+  player.level = clamp(Math.floor(numeric(s.player.level, 1)), 1, 200);
+  player.xp = Math.min(numeric(s.player.xp), xpNeeded(player.level) - 1);
+  openFloor(s.floor, { resume: true, modifiers: s.modifiers });
+  player.hp = player.hpTrail = clamp(s.player.hp, 1, player.maxHP);
+  player.dashCD = numeric(s.player.dashCD);
+  player.novaCD = numeric(s.player.novaCD);
+  player.root.position.set(Number.isFinite(s.position?.x) ? clamp(s.position.x, -22, 22) : 0, 0,
+    Number.isFinite(s.position?.z) ? clamp(s.position.z,-17,17) : 3.2);
+  view.x = player.root.position.x; view.z = player.root.position.z;
+  run.trialDone = s.trialDone === true;
+  run.vaultDone = s.vaultDone === true;
+  run.awakeningRevive = s.awakeningRevive === true;
+  if (s.phase === 'portal') { run.wave = run.waveCount; makePortal({ resume: true }); }
+  updateCamera(1);
+  updateBuild(); updateHUD(1);
+  showZoneBriefing();
+  return true;
+}
+function openAltar() {
+  mode = 'altar';
+  showModal('回响祭坛', `可用回响点 ${meta.points}`);
+  const items = document.createElement('div');
+  items.className = 'altar-items';
+  for (const [id, [name, description, price]] of Object.entries(ALTAR)) {
+    const button = document.createElement('button');
+    const owned = meta.unlocks.includes(id);
+    button.className = 'text-button';
+    button.textContent = `${name} · ${description} · ${owned ? '已解锁' : meta.points < price ? `还差 ${price - meta.points}` : `${price} 点解锁`}`;
+    button.disabled = owned || meta.points < price;
+    button.addEventListener('click', () => {
+      if (meta.unlocks.includes(id) || meta.points < price) return;
+      meta.points -= price;
+      meta.unlocks.push(id);
+      saveMeta();
+      openAltar();
+    });
+    items.append(button);
+  }
+  dom['sheet-content'].append(items);
+  modalAction('关闭', showTitle).focus();
 }
 function resumeGame() {
   mode = 'play';
@@ -2876,7 +3713,19 @@ function showBest() {
 function endRun(win) {
   if (mode === 'result') return;
   mode = 'result';
-  const score = { win, floor: run.floor, kills: run.kills, seconds: run.seconds, level: player.level };
+  clearRun();
+  const total = scoreRun(run, player.level, win);
+  const points = Math.round(total / 120);
+  meta.points += points;
+  meta.totalKills += run.kills;
+  meta.bestFloor = Math.max(meta.bestFloor, run.floor);
+  meta.deepest = Math.max(meta.deepest, run.floor);
+  meta.deathStreak = win ? 0 : run.floor === meta.deathFloor ? meta.deathStreak + 1 : 1;
+  meta.deathFloor = win ? 0 : run.floor;
+  if (win && run.floor >= 20) meta.cleared20 = true;
+  if (win && run.floor >= 40) meta.cleared40 = true;
+  saveMeta();
+  const score = { win, floor: run.floor, kills: run.kills, seconds: run.seconds, level: player.level, score: total, relics: run.relics.length };
   const scoreProgress = score.floor + Number(win);
   const bestProgress = best ? best.floor + Number(best.win) : 0;
   const record = !best || scoreProgress > bestProgress ||
@@ -2884,14 +3733,28 @@ function endRun(win) {
   if (record) { best = score; writeStore('abyss-echo.best', best); }
   updateHUD(1);
   dom['portal-note'].hidden = true;
-  showModal(win ? '深渊已平息' : '回响终止', record ? '本局创下新的最佳纪录' : win ? '四位守门首领已陨落' : zone.name);
-  const stats = [['抵达层数', score.floor], ['击杀', score.kills], ['等级', score.level], ['用时', timeText(score.seconds)]];
+  showModal(win ? '深渊已平息' : '回响终止', record ? '本局创下新的最佳纪录' : zone.name);
+  const stats = [['抵达层数', score.floor], ['击杀', score.kills], ['总伤害', Math.round(run.damage)], ['用时', timeText(score.seconds)]];
   const build = blessings.filter(b => bonus(b.id)).map(b => `${b.name} ×${bonus(b.id)}`).join('、') || '本局尚未获得祝福';
   dom['sheet-content'].innerHTML = `<div class="score">${stats.map(([name,value]) => `<div><strong>${value}</strong><span>${name}</span></div>`).join('')}</div>
-    <p class="result-build"><strong>祝福构筑</strong><br>${build}</p>`;
-  modalAction('再来一局', newRun, 'primary').focus();
+    <p>评分 ${total.toLocaleString('zh-CN')} · 评级 ${gradeRun(total, win, run.seconds)}</p>
+    <p class="result-build"><strong>祝福构筑</strong><br>${build}</p>
+    <p>遗物 ${RELICS.filter(r => relicOwned(r.id)).map(r => r.name).join('、') || '无'}</p>
+    <p>近期词条 ${[...new Set(run.seenModifiers)].map(id => MODIFIERS[id].name).join('、') || '无'}</p>
+    <p>等级 ${score.level} · 最高连杀 ${run.bestStreak} · 首领 ${run.bossKills} · 重掷 ${run.rerolls}</p>
+    <p>回响点 +${points} · 累计 ${meta.points}</p>`;
+  modalAction('再来一局', () => newRun(), 'primary').focus();
+  modalAction('同种子重开', () => newRun({ seed: run.seed }));
   modalAction('返回标题', showTitle);
   if (win) sound('level');
+}
+function scoreRun(data, level, win) {
+  return data.floor * 150 + data.kills * 10 + Math.round(data.damage * .02) +
+    level * 50 + data.relics.length * 60 + data.bossKills * 400 + (win ? 2500 : 0);
+}
+function gradeRun(score, win, seconds) {
+  const rank = [26000,22000,17000,11000,0].findIndex(value => score >= value);
+  return 'SABCD'[Math.max(0, rank - Number(win && seconds < 1500))];
 }
 function resetInput() {
   pressed.clear();
@@ -2974,19 +3837,22 @@ function bindTouchInput() {
     dom.joystick.addEventListener(event, e => { if (e.pointerId === touch.moveId) stopTouchMove(); });
     dom.arena.addEventListener(event, e => { if (e.pointerId === touch.aimId) stopTouchAim(); });
   }
-  for (const skill of ['dash', 'nova']) {
+  for (const skill of ['dash', 'nova', 'guard', 'barrage']) {
     const button = dom[`${skill}-button`];
-    const activate = () => { if (mode === 'play') queueSkill(skill); };
-    button.addEventListener('pointerdown', e => { if (e.button === 0) activate(); });
+    const activate = () => { if (mode === 'play') { if (SKILLS[skill]) castExtraSkill(skill); else queueSkill(skill); } };
+    button.addEventListener('pointerdown', e => { if (e.button === 0) { e.stopPropagation(); activate(); } });
     button.addEventListener('click', e => { if (e.detail === 0) activate(); });
   }
 }
 function bindInput() {
   bindTouchInput();
-  dom.start.addEventListener('click', newRun);
+  dom.start.addEventListener('click', () => newRun());
+  dom['continue-run'].addEventListener('click', loadRun);
+  dom['altar-entry'].addEventListener('click', openAltar);
   dom['title-options'].addEventListener('click', () => openOptions('title'));
   dom.pause.addEventListener('click', openPause);
   dom['trial-entry'].addEventListener('click', startTrial);
+  dom['vault-entry'].addEventListener('click', startVault);
   dom['auto-fire'].addEventListener('click', toggleAuto);
   dom.arena.addEventListener('contextmenu', e => e.preventDefault());
   dom.arena.addEventListener('mousedown', e => {
@@ -3023,6 +3889,7 @@ function handleKey(e) {
     if (mode === 'play') openPause();
     else if (mode === 'paused') resumeGame();
     else if (mode === 'options') closeOptions();
+    else if (mode === 'altar') showTitle();
     return;
   }
   if (mode === 'blessing' && !e.repeat) {
@@ -3037,6 +3904,8 @@ function handleKey(e) {
   if (e.repeat) return;
   if (['Space', 'ShiftLeft', 'ShiftRight'].includes(e.code)) queueSkill('dash');
   else if (e.code === 'KeyQ') queueSkill('nova');
+  else if (e.code === 'KeyE') castExtraSkill('guard');
+  else if (e.code === 'KeyV') castExtraSkill('barrage');
   else if (e.code === 'KeyF') toggleAuto();
 }
 
@@ -3044,6 +3913,10 @@ function handleKey(e) {
 function updateGame(dt, elapsed = dt) {
   worldTime += dt;
   run.seconds += elapsed;
+  if (run.saveNoteT > 0) {
+    run.saveNoteT -= dt;
+    if (run.saveNoteT <= 0) dom['save-note'].hidden = true;
+  }
   updatePlayer(dt);
   for (const e of mobList) {
     updateEnemy(e, dt);
@@ -3058,6 +3931,7 @@ function updateGame(dt, elapsed = dt) {
   updateModifiers(dt);
   if (mode !== 'play') return;
   updateFloor(dt);
+  if (mode === 'play') updateTerrain(dt);
   if (run.pending.length && mode === 'play') openBlessing(run.pending.shift());
 }
 function updateModifiers(dt) {
@@ -3076,6 +3950,157 @@ function updateModifiers(dt) {
     storm.timer = 12.9;
     storm.target = null;
   }
+}
+function setupTerrain() {
+  const t = run.terrain = {
+    kind: zone.terrain, age: 0, waveTime: 0, grown: false, vines: [], materials: [], markers: [],
+    forced: 0, curtain: 0, nextPulse: 1, nextEvent: 12, nextHeat: 10, tide: false, exposed: false
+  };
+  function material(color, opacity) {
+    const m = basic(color, opacity);
+    t.materials.push(m);
+    return m;
+  }
+  if (t.kind === 'vines' || run.floor === 40) {
+    t.stem = material(0x66b890, 1);
+    t.bud = material(0xffafd0, 1);
+  }
+  if (t.kind === 'tide') {
+    t.water = mesh(room, 'plane', material(0x399cce, .38), 0, .032, 0, WIDTH * 2, DEPTH * 2, 1);
+    t.water.rotation.x = -Math.PI / 2;
+    t.platforms = [[-9,-3],[8,-4],[0,8]].slice(0,run.deepFloor.intensity).map(([x,z]) =>
+      ground(room, 'disc', material(0xa9efe7, .74), x,z,4.45,.045));
+    t.markers.push(t.water, ...t.platforms);
+  }
+  if (t.kind === 'factory') {
+    const arrowMaterial = material(0xffd196, .56);
+    t.belts = [-8,8].slice(0,run.deepFloor.intensity).map(x => {
+      const belt = mesh(room, 'plane', material(0xf4a56b, .20), x, .033, 0, 4, DEPTH * 2 - 3, 1);
+      belt.rotation.x = -Math.PI / 2;
+      for (let z = -12; z <= 12; z += 4) {
+        const arrow = mesh(room, 'cone', arrowMaterial, x,.065,z,.26,.52,.26);
+        arrow.rotation.x = x > 0 ? -Math.PI / 2 : Math.PI / 2;
+        t.markers.push(arrow);
+      }
+      return belt;
+    });
+    t.markers.push(...t.belts);
+    if (hasModifier('overheat')) t.markers.push(ground(room, 'disc', material(0xa9efe7, .26), 0,0,5,.04));
+  }
+  if (t.kind === 'theatre') {
+    t.beams = Array.from({ length: 2 }, () => {
+      const group = new THREE.Group();
+      room.add(group);
+      const beam = mesh(group, 'plane', material(0xe3b8ff, .29), 0, .039, 12, 3, 24, 1);
+      beam.rotation.x = -Math.PI / 2;
+      return group;
+    });
+    t.nextEvent = 10;
+    t.markers.push(...t.beams);
+  }
+  for (const marker of t.markers) marker.visible = false;
+}
+function growVines(count) {
+  const t = run.terrain, p = player.root.position;
+  const beds = [[-13,-5,1], [13,5,1], [-6,11,0], [7,-11,0], [-15,9,1]];
+  for (const [x, z, direction] of beds) {
+    if (t.vines.length >= count) break;
+    if (t.vines.some(v => v.x === x && v.z === z) || distance(p, {x,z}) < 4.5) continue;
+    const candidates = [-1,0,1].map(i => ({ x: x + i * 1.45 * direction, z: z + i * 1.45 * (1 - direction), r: .84, center: i === 0 }));
+    if (candidates.some(o => !clearOfZones(o.x, o.z, o.r))) continue;
+    const obj = new THREE.Group();
+    room.add(obj);
+    const vine = { x,z,obj,hp:120 };
+    t.vines.push(vine);
+    for (const o of candidates) {
+      obstacleList.push({ ...o, vine });
+      mesh(obj, 'ball', t.stem, o.x, .49, o.z, .76, .54, .76);
+      if (o.center) mesh(obj, 'gem', t.bud, o.x, 1.08, o.z, .38, .46, .38);
+      else mesh(obj, 'cone', t.stem, o.x, 1.01, o.z, .29, .50, .29);
+    }
+    shock(x,z,2.4,0x98edbf,.54);
+  }
+}
+function removeVine(vine) {
+  room.remove(vine.obj);
+  const vines = run.terrain.vines;
+  const index = vines.indexOf(vine);
+  if (index >= 0) vines.splice(index,1);
+  obstacleList = obstacleList.filter(o => o.vine !== vine);
+}
+function damageVine(vine, damage) {
+  vine.hp -= damage;
+  sparks(vine.x,.62,vine.z,0xffb8d6,6,3,.19,.26);
+  if (vine.hp <= 0) { removeVine(vine); sound('kill'); }
+}
+function updateTerrain(dt) {
+  const t = run.terrain;
+  if (!t || (run.phase !== 'combat' && run.phase !== 'trial')) return;
+  const p = player.root.position, boss = run.boss, danger = boss?.enrage;
+  t.age += dt;
+  t.waveTime += dt;
+  t.forced = Math.max(0,t.forced - dt);
+  t.curtain = Math.max(0,t.curtain - dt);
+  t.nextPulse -= dt;
+  const pulse = t.nextPulse <= 0;
+  if (pulse) t.nextPulse += 1;
+  if (hasModifier('pollen')) healPlayer(dt,false);
+  if (hasModifier('thornfield') && pulse && squared(p.x,p.z) > 14 ** 2) hurtPlayer(6);
+  if (t.kind === 'vines') {
+    if (!t.grown && (t.waveTime >= 8 || boss && t.waveTime >= 2)) {
+      t.grown = true;
+      growVines(run.deepFloor.intensity);
+    }
+    if (pulse && danger && t.vines.length < 2) growVines(2);
+  } else if (t.kind === 'tide') {
+    const period = hasModifier('tide') ? 14 : 20, phase = t.age % period;
+    t.tide = danger || t.forced > 0 || phase >= period * .6;
+    t.water.visible = t.tide || phase > period * .6 - 2;
+    t.water.material.opacity = t.tide ? .36 : .11;
+    let safe = false;
+    t.platforms.forEach((platform,i) => {
+      platform.visible = !danger || i < 2;
+      const r = t.forced > 0 ? 3.2 : 4.45;
+      platform.scale.set(r,r,1);
+      if (platform.visible && distance(p,platform.position) <= r) safe = true;
+    });
+    if (pulse && t.tide && !safe) hurtPlayer(6);
+  } else if (t.kind === 'factory') {
+    for (const marker of t.markers) marker.visible = true;
+    const reverse = (run.floor === 33 ? -1 : 1) * (danger ? -1 : 1);
+    const speed = 3.2 * (hasModifier('gear') ? 2 : 1) * dt * reverse;
+    for (const belt of t.belts) {
+      const x = belt.position.x, push = speed * Math.sign(x);
+      if (Math.abs(p.x - x) <= 2) place(p,0,push,.49);
+      for (const e of mobList) if (!e.dead && Math.abs(e.root.position.x - x) <= 2) place(e.root.position,0,push,e.r);
+    }
+    if (t.age >= t.nextEvent) {
+      t.nextEvent += danger ? 6 : 12;
+      for (const x of [-16,16]) for (const z of [-11,11]) addHazard(x,z,3.2,.14,18,0xffc08d,1);
+    }
+    if (hasModifier('overheat') && t.age >= t.nextHeat) {
+      t.nextHeat += 10;
+      if (squared(p.x,p.z) > 25) hurtPlayer(8);
+    }
+  } else if (t.kind === 'theatre') {
+    const number = Math.min(2,run.deepFloor.intensity + Number(hasModifier('spotlight') || danger));
+    t.exposed = false;
+    t.beams.forEach((beam,i) => {
+      beam.visible = i < number;
+      if (!beam.visible) return;
+      const a = t.age * .35 * (danger ? -1 : 1) + i * Math.PI;
+      beam.rotation.y = a;
+      const forward = p.x * Math.sin(a) + p.z * Math.cos(a);
+      const side = p.x * Math.cos(a) - p.z * Math.sin(a);
+      if (forward > 1 && Math.abs(side) < 1.5) t.exposed = true;
+    });
+    if (pulse && t.exposed) hurtPlayer(5);
+    if (run.floor !== 36 && t.age >= t.nextEvent) {
+      t.nextEvent += 10;
+      for (const shift of [-3,0,3]) addHazard(clamp(p.x + shift,-20,20),clamp(p.z + (shift ? 2 : 0),-15,15),2.2,.14,15,0xf6adf2,1);
+    }
+  }
+  dom.arena.classList.toggle('curtain', t.curtain > 0);
 }
 function animateWorld(dt, visualTime, title) {
   for (const flame of flames) {
@@ -3139,6 +4164,15 @@ function showTitle() {
   dom.hud.hidden = true;
   dom['portal-note'].hidden = true;
   dom['title-screen'].hidden = false;
+  const { save, invalid } = readRunSave();
+  dom['continue-run'].hidden = !save;
+  dom['startup-error'].hidden = !invalid;
+  if (invalid) {
+    clearRun();
+    textIf(dom['startup-error'], '存档已失效，可开始新一局。');
+  }
+  textIf(dom['altar-entry'], `回响祭坛 · ${meta.points} 点`);
+  textIf(dom['floor-guide'], `${MAX_FLOOR} 层地牢 · ${blessings.length} 种祝福 · 2.2.0`);
   for (const blade of player.blades ?? []) { scene.remove(blade); }
   player.blades = [];
   player.root.position.set(4.1, 0, 2.6);
@@ -3222,18 +4256,18 @@ function boot() {
   try {
     renderer = new THREE.WebGLRenderer({ antialias: !touch.enabled && innerWidth * innerHeight * devicePixelRatio ** 2 <= PIXEL_BUDGET, alpha: false, powerPreference: 'high-performance' });
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = .92;
+    renderer.toneMappingExposure = 1.02;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = false;
     dom.arena.append(renderer.domElement);
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x160f12);
-    scene.fog = new THREE.FogExp2(0x160f12, .027);
+    scene.fog = new THREE.FogExp2(0x241a22, .015);
     camera = new THREE.PerspectiveCamera(44, 1, .1, 100);
-    hemi = new THREE.HemisphereLight(0xe8cac6, 0x362933, .26);
+    hemi = new THREE.HemisphereLight(0xffe3ef, 0x4a3b58, .52);
     moon = new THREE.DirectionalLight(0xc5b5bc, .43);
     moon.position.set(-7, 11, 5);
-    playerLight = new THREE.PointLight(0x62cfeb, 3.6, 8, 1.4);
+    playerLight = new THREE.PointLight(0xffc2dd, 4, 9, 1.4);
     scene.add(hemi, moon, playerLight);
     for (let i = 0; i < 4; i++) {
       const light = new THREE.PointLight(0xff934b, 3.9, 13.5, 1.35);
@@ -3246,6 +4280,10 @@ function boot() {
     bindInput();
     addEventListener('resize', resize);
     showTitle();
+    if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('selftest')) {
+      runSelfTest();
+      return;
+    }
     requestAnimationFrame(frame);
   } catch (error) {
     dom.start.disabled = true;
@@ -3253,6 +4291,54 @@ function boot() {
     dom['startup-error'].textContent = '无法初始化 3D 场景。请使用支持 WebGL 的桌面浏览器打开。';
     console.error(error);
   }
+}
+function __selfTest() {
+  const samples = Array.from({ length: 1000 }, (_, i) => {
+    const seed = Math.imul(i + 1, 0x9e3779b9) >>> 0, floor = i % MAX_FLOOR + 1;
+    return { seed, floor, ...planFloor(seed, floor) };
+  });
+  const summary = { floor: 7, kills: 80, damage: 10000, relics: ['r_edge_whet','r_ember_core'], bossKills: 1 };
+  const layout = samples.every(p => p.floor >= LAYOUTS[p.layout].minFloor && p.layout === planFloor(p.seed,p.floor).layout);
+  return {
+    经验阈值: Array.from({ length: 40 }, (_, i) => i + 1).every(n => xpNeeded(n + 1) > xpNeeded(n)),
+    首领生命: [2263,5115,13330,29016,48360,73160,104160,141360].every((hp,i) => Math.round(enemies.boss.hp * floorDifficulty((i + 1) * 5).boss) === hp) && enemies.boss.hp * FINAL_BOSS_HP_MULT === 198400,
+    前二十层难度: Array.from({ length: 20 }, (_, i) => i + 1).every(f => {
+      const d = floorDifficulty(f);
+      return Math.abs(d.hp - (1 + .072 * (f - 1))) < .0005 && Math.abs(d.damage - (1 + .028 * (f - 1))) < .0005 && Math.abs(d.speed - (1 + .013 * (f - 1))) < .0005;
+    }),
+    布局合法: layout,
+    障碍净空: samples.every(p => p.obstacles.every(o => clearOfZones(o.x, o.z, o.r))),
+    词条数量: samples.every(p => p.modifiers.length === modifierCount(p.floor) && new Set(p.modifiers).size === p.modifiers.length &&
+      !(p.modifiers.includes('gale') && p.modifiers.includes('overload'))),
+    种子复现: samples.slice(0, 10).every(p => JSON.stringify(planFloor(p.seed, p.floor)) === JSON.stringify(planFloor(p.seed, p.floor))),
+    布局覆盖: new Set(samples.map(p => p.layout)).size === 5,
+    遗物构成: Object.keys(RELIC_TAGS).every(tag => RELICS.filter(r => r.tag === tag && !r.floor).length === 4),
+    祝福完整: blessings.length === 33 && new Set(blessings.map(b => b.id)).size === 33 && blessings.every(b => b.limit > 0),
+    路线归属: new Set(Object.values(ROUTES).flat()).size === 28 && Object.values(ROUTES).flat().every(id => blessings.some(b => b.id === id)),
+    存档纯数据: (() => {
+      const original = run;
+      try {
+        run = {
+          seed: 654321, floor: 7, phase: 'entry', element: 'frost', layout: 'pillars', modifiers: ['gale'],
+          build: new Map([['force',2]]), relics: ['r_edge_whet'], awakenings: [], skills: {}, skillCd: {},
+          seenZones: [], seenModifiers: [], trialDone: false, vaultDone: false, rerolls: 2, revives: 0, altarRevive: false,
+          awakeningRevive: false, seconds: 20, kills: 15, damage: 1000, bossKills: 1, bestStreak: 3, assistFloor: 0
+        };
+        const saved = JSON.parse(JSON.stringify(snapshotRun()));
+        return saved.seed === 654321 && saved.build.force === 2 && saved.modifiers[0] === 'gale' && Number.isFinite(saved.position.x);
+      } finally { run = original; }
+    })(),
+    结算评分: scoreRun(summary, 9, false) === 3020
+  };
+}
+function runSelfTest() {
+  mode = 'selftest';
+  const checks = Object.entries(__selfTest());
+  const pass = checks.filter(([, passed]) => passed).length;
+  showModal('深渊回响自检', `PASS ${pass} / FAIL ${checks.length - pass}`, true);
+  dom['sheet-content'].innerHTML = `<table style="width:100%"><tbody>${checks.map(([name, ok]) =>
+    `<tr><th scope="row" style="text-align:left">${name}</th><td style="color:${ok ? 'var(--cyan)' : '#ff7a7a'}">${ok ? '通过' : '失败'}</td></tr>`).join('')}</tbody></table>`;
+  modalAction('返回标题', () => { showTitle(); requestAnimationFrame(frame); }, 'primary').focus();
 }
 boot();
 </script>
