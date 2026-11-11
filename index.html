@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="深渊回响，一款可离线游玩的 3D 动作肉鸽游戏。">
 <title>深渊回响 2.0 · Abyss Echo</title>
@@ -36,7 +36,7 @@
   .number.critical { color: #ffcd61; font-size: 24px; }
   .number.heal { color: #83efac; }
   button, input { font: inherit; }
-  button { color: inherit; cursor: pointer; }
+  button { color: inherit; cursor: pointer; touch-action: manipulation; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
   button:disabled { opacity: .42; cursor: default; }
   kbd { display: inline-grid; min-width: 23px; height: 23px; padding: 0 5px; place-items: center; border: 1px solid #c7b79948; background: #121217; color: #e6dbbf; font: 11px var(--mono); border-radius: 3px; white-space: nowrap; }
@@ -141,7 +141,10 @@
   .sheet-actions .primary { min-height: 43px; padding: 0 18px; }
   #cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .card { min-height: 200px; padding: 13px 15px 15px; text-align: left; background: radial-gradient(ellipse at 45% 0%, color-mix(in srgb, var(--rarity) 15%, #13141b), #101118 72%); border: 1px solid color-mix(in srgb, var(--rarity) 52%, #242027); transition: translate .17s, box-shadow .17s, border-color .17s; }
-  .card:hover, .card:focus-visible { border-color: var(--rarity); translate: 0 -3px; box-shadow: 0 0 22px color-mix(in srgb, var(--rarity) 22%, transparent); }
+  .card:focus-visible { border-color: var(--rarity); box-shadow: 0 0 22px color-mix(in srgb, var(--rarity) 22%, transparent); }
+  @media (hover: hover) {
+    .card:hover { border-color: var(--rarity); translate: 0 -3px; box-shadow: 0 0 22px color-mix(in srgb, var(--rarity) 22%, transparent); }
+  }
   .card-top { display: flex; align-items: center; justify-content: space-between; color: var(--rarity); font-size: 11px; letter-spacing: .1em; }
   .card-rune { display: grid; place-items: center; width: 43px; height: 43px; margin: 14px 0 10px; color: var(--rarity); border: 1px solid color-mix(in srgb, var(--rarity) 45%, transparent); background: #090a0d94; font: 24px var(--serif); box-shadow: inset 0 0 17px color-mix(in srgb, var(--rarity) 20%, transparent); }
   .card strong { display: block; font-size: 16px; color: #efe5d3; }
@@ -157,6 +160,70 @@
   .score strong { display: block; font: 20px var(--mono); color: var(--gold); }
   .score span { color: var(--muted); font-size: 11px; }
   .result-build { color: #bdb4a5; line-height: 1.8; margin: 0; max-height: 140px; overflow: auto; }
+  .touch-guide, #joystick { display: none; }
+  .touch-mode {
+    --hud-left: calc(12px + env(safe-area-inset-left));
+    --hud-right: calc(12px + env(safe-area-inset-right));
+    --hud-top: calc(10px + env(safe-area-inset-top));
+    --hud-bottom: calc(29px + env(safe-area-inset-bottom));
+    --stick-size: clamp(80px, 22vmin, 112px);
+  }
+  .touch-mode #arena, .touch-mode #joystick { touch-action: none; user-select: none; -webkit-user-select: none; }
+  .touch-mode .key-guide, .touch-mode kbd { display: none; }
+  .touch-mode .touch-guide { display: block; color: var(--muted); font-size: 12px; }
+  .touch-mode #title-screen {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-right: max(22px, var(--hud-right));
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: max(22px, var(--hud-left));
+    overflow-y: auto;
+  }
+  .touch-mode .text-button, .touch-mode .sheet-actions .primary { min-height: 44px; }
+  .touch-mode .stats { top: var(--hud-top); left: var(--hud-left); }
+  .touch-mode .stats .brand, .touch-mode .stat:last-child { display: none; }
+  .touch-mode .stat-list { border: 0; padding: 0; gap: 10px; }
+  .touch-mode .stat strong { font-size: 13px; }
+  .touch-mode .floor { top: var(--hud-top); }
+  .touch-mode .floor h2 { font-size: clamp(17px, 4.8vw, 25px); }
+  .touch-mode #wave-text { font-size: 11px; letter-spacing: .06em; }
+  .touch-mode .map-box { top: var(--hud-top); right: var(--hud-right); width: 76px; padding: 4px; }
+  .touch-mode #map { width: 66px; height: 50px; }
+  .touch-mode #boss-hud { top: calc(var(--hud-top) + 67px); width: min(350px, 44vw); }
+  .touch-mode #boss-name { font-size: 12px; letter-spacing: .03em; }
+  .touch-mode .build { top: calc(var(--hud-top) + 57px); left: var(--hud-left); width: 76px; max-height: 25vh; }
+  .touch-mode #build-items { grid-template-columns: repeat(3, 21px); gap: 4px; }
+  .touch-mode .build-icon { width: 21px; height: 21px; font-size: 13px; }
+  .touch-mode .hud-actions { top: calc(var(--hud-top) + 82px); right: var(--hud-right); bottom: auto; }
+  .touch-mode .hud-actions button { min-width: 44px; justify-content: center; background: #0b0d13d9; }
+  .touch-mode .vitals { bottom: calc(var(--hud-bottom) + var(--stick-size) + 9px); left: var(--hud-left); width: min(200px, 43vw); }
+  .touch-mode .vital-row { gap: 5px; }
+  .touch-mode .skills {
+    position: fixed; right: var(--hud-right); bottom: var(--hud-bottom);
+    grid-template-columns: repeat(2, minmax(60px, 1fr)); gap: 8px; margin: 0;
+  }
+  .touch-mode .skill { min-height: 56px; display: grid; place-items: center; gap: 1px; font-size: 13px; padding: 6px; }
+  .touch-mode .skill em { margin: 0; font-size: 10px; }
+  .touch-mode .skill:active, .touch-mode .hud-actions button:active { border-color: var(--cyan); }
+  .touch-mode #joystick {
+    position: absolute; left: var(--hud-left); bottom: var(--hud-bottom);
+    display: grid; place-items: center; width: var(--stick-size); height: var(--stick-size);
+    border: 1px solid #a887566e; border-radius: 50%; pointer-events: auto;
+    background: radial-gradient(circle, #11151bbc 48%, #17151bd9 49% 54%, #0b0d13b0 55%);
+    box-shadow: inset 0 0 16px #08090aab;
+  }
+  #joystick-thumb {
+    width: 42%; aspect-ratio: 1; border: 1px solid #b79961; border-radius: 50%;
+    background: radial-gradient(circle, #343233, #171921); box-shadow: 0 3px 12px #0008;
+    pointer-events: none;
+  }
+  #joystick.active #joystick-thumb { border-color: var(--cyan); }
+  .touch-mode .xp { bottom: calc(7px + env(safe-area-inset-bottom)); left: var(--hud-left); right: var(--hud-right); }
+  .touch-mode #portal-note { top: calc(var(--hud-top) + 74px); bottom: auto; padding: 5px 7px; font-size: 11px; }
+  .touch-mode .overlay {
+    padding: calc(12px + env(safe-area-inset-top)) var(--hud-right) calc(12px + env(safe-area-inset-bottom)) var(--hud-left);
+    overscroll-behavior: contain;
+  }
+  .touch-mode .setting { min-height: 44px; }
   @media (max-width: 700px) {
     .stats, .build, .vitals { left: 12px; }
     .stats, .map-box { top: 13px; }
@@ -184,6 +251,34 @@
     .title-content .premise { margin: 15px 0 14px; }
     .title-bottom { min-height: 46px; padding: 9px 0; }
     .overlay { place-items: start center; }
+  }
+  @media (max-width: 700px) and (orientation: portrait) {
+    #title-screen {
+      background: linear-gradient(0deg, #08080bfc 0%, #09090de8 31%, #09090d29 64%, #08080b94 100%);
+    }
+    .title-top { padding-bottom: 10px; gap: 8px; }
+    .title-top .brand { font-size: 11px; gap: 7px; letter-spacing: .23em; }
+    .title-top button { padding-inline: 10px; white-space: nowrap; }
+    .title-content { margin-top: auto; }
+    .title-content h1 { font-size: clamp(43px, 14vw, 76px); }
+    .title-content .premise { margin-block: 22px 19px; }
+    .title-bottom { min-height: 56px; gap: 5px 12px; }
+  }
+  @media (max-width: 540px) {
+    .sheet { padding: 16px; }
+    .sheet-head { margin-bottom: 12px; padding-bottom: 10px; }
+    .sheet-actions { margin-top: 14px; }
+    #cards { grid-template-columns: 1fr; gap: 8px; }
+    .card {
+      display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center;
+      gap: 3px 9px; padding: 9px 10px; min-height: 78px;
+    }
+    .card-top { grid-column: 3; grid-row: 1; gap: 4px; }
+    .card-rune { grid-column: 1; grid-row: 1 / 4; margin: 0; }
+    .card strong { grid-column: 2; grid-row: 1; font-size: 15px; }
+    .card-description, .owned { grid-column: 2 / 4; margin: 0; }
+    .card-description { grid-row: 2; font-size: 12px; }
+    .owned { grid-row: 3; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -215,6 +310,7 @@
       <span><kbd>空格</kbd> 冲刺</span>
       <span><kbd>Q</kbd> 新星</span>
     </div>
+    <div class="touch-guide">拖动摇杆移动，自动瞄准射击</div>
     <div class="floor-guide">20 层地牢 · 25 种祝福 · 2.0</div>
   </footer>
 </main>
@@ -249,8 +345,8 @@
     <div class="vital-row"><span id="level">等级 1</span><span id="health-text">100 / 100</span></div>
     <div class="bar" aria-hidden="true"><i class="trail" id="health-trail"></i><i id="health-fill"></i></div>
     <div class="skills">
-      <div class="skill"><kbd>空格</kbd>冲刺<em id="dash-text">就绪</em><i id="dash-fill"></i></div>
-      <div class="skill"><kbd>Q</kbd>新星<em id="nova-text">就绪</em><i id="nova-fill"></i></div>
+      <button type="button" class="skill" id="dash-button"><kbd>空格</kbd>冲刺<em id="dash-text">就绪</em><i id="dash-fill"></i></button>
+      <button type="button" class="skill" id="nova-button"><kbd>Q</kbd>新星<em id="nova-text">就绪</em><i id="nova-fill"></i></button>
     </div>
   </div>
   <div class="hud-corner hud-actions">
@@ -258,6 +354,7 @@
     <button id="pause" class="text-button"><kbd>Esc</kbd> 暂停</button>
   </div>
   <div class="xp"><span id="xp-text">灵魂 0 / 10</span><div class="bar"><i id="xp-fill"></i></div></div>
+  <div id="joystick" role="group" aria-label="移动摇杆"><div id="joystick-thumb" aria-hidden="true"></div></div>
   <div id="crosshair" aria-hidden="true" hidden></div>
   <div id="banner" aria-live="polite"><strong></strong><span></span></div>
   <div id="portal-note" hidden>踏入传送门，继续深入</div>
@@ -351,6 +448,7 @@ let worldTime = 0, rawTime = 0, lastFrame = 0, uiTime = 0, hold = 0, shake = 0, 
 let mode = 'title', modalReturn = 'title', lastFocus, obstacleList = [], flames = [];
 const pressed = new Set();
 const input = { x: 0, y: 0, pointer: false, fire: false, auto: false, dash: 0, nova: 0 };
+const touch = { enabled: matchMedia('(pointer: coarse)').matches, moveId: null, aimId: null, x: 0, z: 0 };
 const aim = { x: 0, z: -1 };
 const view = { x: 0, z: 0 };
 const geometry = {}, materials = {}, zoneArt = [];
@@ -1177,6 +1275,7 @@ function rebuildStats() {
 }
 function newRun() {
   clearModal();
+  resetInput();
   if (player) for (const blade of player.blades ?? []) scene.remove(blade);
   player = Object.assign(player ?? makePlayer(), {
     maxHP: 100, hp: 100, hpTrail: 100, xp: 0, level: 1, blades: [],
@@ -1190,10 +1289,11 @@ function newRun() {
   };
   rebuildStats();
   hold = shake = hurt = 0;
-  input.auto = false;
+  input.auto = touch.enabled;
   mode = 'play';
   dom['title-screen'].hidden = true;
   dom.hud.hidden = false;
+  resize();
   player.root.visible = true;
   player.root.scale.setScalar(1.10);
   openFloor(1);
@@ -1515,16 +1615,18 @@ function updatePlayer(dt) {
   player.recoil *= Math.exp(-18 * dt);
   healPlayer(s.regen * dt, false);
   pointAim();
-  const movingX = Number(pressed.has('KeyD') || pressed.has('ArrowRight')) - Number(pressed.has('KeyA') || pressed.has('ArrowLeft'));
-  const movingZ = Number(pressed.has('KeyS') || pressed.has('ArrowDown')) - Number(pressed.has('KeyW') || pressed.has('ArrowUp'));
+  const keyboardX = Number(pressed.has('KeyD') || pressed.has('ArrowRight')) - Number(pressed.has('KeyA') || pressed.has('ArrowLeft'));
+  const keyboardZ = Number(pressed.has('KeyS') || pressed.has('ArrowDown')) - Number(pressed.has('KeyW') || pressed.has('ArrowUp'));
+  const movingX = touch.moveId === null ? keyboardX : touch.x;
+  const movingZ = touch.moveId === null ? keyboardZ : touch.z;
   const norm = Math.hypot(movingX, movingZ);
-  const dx = norm ? movingX / norm : 0, dz = norm ? movingZ / norm : 0;
+  const dx = movingX / Math.max(1, norm), dz = movingZ / Math.max(1, norm);
   if (input.dash && player.dashCD <= 0) {
     player.dashCD = s.dashCD;
     player.dashTime = .185;
     player.invul = Math.max(.28, player.invul);
-    player.dashX = norm ? dx : aim.x;
-    player.dashZ = norm ? dz : aim.z;
+    player.dashX = norm ? movingX / norm : aim.x;
+    player.dashZ = norm ? movingZ / norm : aim.z;
     player.dashHits.clear();
     shock(p.x, p.z, 2.1, 0x71ffef, .37);
     sparks(p.x, .66, p.z, 0x71ffef, 16, 4.1);
@@ -2169,6 +2271,7 @@ function showModal(title, description, wide = false) {
   dom['sheet-content'].replaceChildren();
   dom['sheet-actions'].replaceChildren();
   dom.overlay.hidden = false;
+  dom.overlay.scrollTop = 0;
   dom['title-screen'].inert = true;
   dom.hud.inert = true;
   resetInput();
@@ -2232,7 +2335,7 @@ function renderBlessings() {
     cards.append(card);
   });
   dom['sheet-content'].append(cards);
-  const reroll = modalAction(`重掷 · ${run.rerolls} 次（R）`, rerollBlessings);
+  const reroll = modalAction(`重掷 · ${run.rerolls} 次${touch.enabled ? '' : '（R）'}`, rerollBlessings);
   reroll.disabled = run.rerolls <= 0;
   cards.firstElementChild.focus({ preventScroll: true });
 }
@@ -2287,16 +2390,20 @@ function resumeGame() {
 function openOptions(returnTo) {
   mode = 'options';
   modalReturn = returnTo;
-  showModal('操作与设置', '键盘与鼠标');
-  dom['sheet-content'].innerHTML = `
-    <dl class="control-list">
+  showModal('操作与设置', touch.enabled ? '触屏操作' : '键盘与鼠标');
+  const controls = touch.enabled ? `
+      <div><dt>移动</dt><dd>拖动左下摇杆</dd></div>
+      <div><dt>射击</dt><dd>默认自动瞄准，也可按住战场瞄准射击</dd></div>
+      <div><dt>冲刺与新星</dt><dd>点按右下技能</dd></div>
+      <div><dt>祝福与重掷</dt><dd>点按卡牌或重掷按钮</dd></div>` : `
       <div><dt>移动</dt><dd>W A S D / 方向键</dd></div>
       <div><dt>瞄准与连发</dt><dd>移动鼠标 / 按住左键</dd></div>
       <div><dt>冲刺与短暂无敌</dt><dd>空格 / Shift</dd></div>
       <div><dt>新星清除周围弹幕</dt><dd>Q / 鼠标右键</dd></div>
       <div><dt>自动瞄准射击 / 暂停</dt><dd>F / Esc</dd></div>
-      <div><dt>选择祝福 / 重掷</dt><dd>1 2 3 / R</dd></div>
-    </dl>
+      <div><dt>选择祝福 / 重掷</dt><dd>1 2 3 / R</dd></div>`;
+  dom['sheet-content'].innerHTML = `
+    <dl class="control-list">${controls}</dl>
     <label class="setting"><span>音效音量</span><input id="volume-setting" type="range" min="0" max="100" value="${Math.round(options.volume * 100)}"></label>
     <label class="setting"><span>镜头震动</span><input id="shake-setting" type="checkbox" ${options.shake ? 'checked' : ''}></label>
     <label class="setting"><span>伤害飘字</span><input id="numbers-setting" type="checkbox" ${options.numbers ? 'checked' : ''}></label>`;
@@ -2352,6 +2459,8 @@ function resetInput() {
   pressed.clear();
   input.fire = false;
   input.dash = input.nova = 0;
+  stopTouchMove();
+  stopTouchAim();
 }
 function syncCursor() {
   const active = mode === 'play' && input.pointer && !dom.hud.hidden;
@@ -2359,6 +2468,7 @@ function syncCursor() {
   document.body.classList.toggle('aiming', active);
 }
 function trackPointer(e) {
+  if (touch.aimId !== null ? e.pointerId !== touch.aimId : e.pointerType === 'touch') return;
   input.pointer = dom.arena.contains(e.target);
   if (input.pointer) {
     input.x = e.clientX;
@@ -2367,22 +2477,89 @@ function trackPointer(e) {
   }
   syncCursor();
 }
+function moveJoystick(e) {
+  if (e.pointerId !== touch.moveId) return;
+  const bounds = dom.joystick.getBoundingClientRect();
+  const radius = bounds.width * .29;
+  const x = e.clientX - bounds.left - bounds.width / 2;
+  const z = e.clientY - bounds.top - bounds.height / 2;
+  const length = Math.hypot(x, z);
+  const amount = clamp((length / radius - .15) / .85, 0, 1);
+  touch.x = length ? x / length * amount : 0;
+  touch.z = length ? z / length * amount : 0;
+  dom['joystick-thumb'].style.transform = `translate(${touch.x * radius}px, ${touch.z * radius}px)`;
+}
+function stopTouchMove() {
+  if (touch.moveId === null) return;
+  const id = touch.moveId;
+  touch.moveId = null;
+  touch.x = touch.z = 0;
+  dom.joystick.classList.remove('active');
+  dom['joystick-thumb'].style.transform = '';
+  if (dom.joystick.hasPointerCapture(id)) dom.joystick.releasePointerCapture(id);
+}
+function stopTouchAim() {
+  if (touch.aimId === null) return;
+  const id = touch.aimId;
+  touch.aimId = null;
+  input.fire = input.pointer = false;
+  if (dom.arena.hasPointerCapture(id)) dom.arena.releasePointerCapture(id);
+  syncCursor();
+}
+function bindTouchInput() {
+  document.body.classList.toggle('touch-mode', touch.enabled);
+  addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || touch.enabled) return;
+    touch.enabled = true;
+    document.body.classList.add('touch-mode');
+    resize();
+  }, true);
+  dom.joystick.addEventListener('pointerdown', e => {
+    if (mode !== 'play' || touch.moveId !== null || e.button !== 0) return;
+    e.preventDefault();
+    touch.moveId = e.pointerId;
+    dom.joystick.setPointerCapture(e.pointerId);
+    dom.joystick.classList.add('active');
+    moveJoystick(e);
+  });
+  dom.joystick.addEventListener('pointermove', moveJoystick);
+  dom.arena.addEventListener('pointerdown', e => {
+    if (mode !== 'play' || e.pointerType !== 'touch' || touch.aimId !== null) return;
+    e.preventDefault();
+    touch.aimId = e.pointerId;
+    dom.arena.setPointerCapture(e.pointerId);
+    trackPointer(e);
+    input.fire = true;
+    unlockAudio();
+  });
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    dom.joystick.addEventListener(event, e => { if (e.pointerId === touch.moveId) stopTouchMove(); });
+    dom.arena.addEventListener(event, e => { if (e.pointerId === touch.aimId) stopTouchAim(); });
+  }
+  for (const skill of ['dash', 'nova']) {
+    const button = dom[`${skill}-button`];
+    const activate = () => { if (mode === 'play') queueSkill(skill); };
+    button.addEventListener('pointerdown', e => { if (e.button === 0) activate(); });
+    button.addEventListener('click', e => { if (e.detail === 0) activate(); });
+  }
+}
 function bindInput() {
+  bindTouchInput();
   dom.start.addEventListener('click', newRun);
   dom['title-options'].addEventListener('click', () => openOptions('title'));
   dom.pause.addEventListener('click', openPause);
   dom['auto-fire'].addEventListener('click', toggleAuto);
   dom.arena.addEventListener('contextmenu', e => e.preventDefault());
   dom.arena.addEventListener('mousedown', e => {
-    if (mode !== 'play') return;
+    if (mode !== 'play' || touch.aimId !== null) return;
     trackPointer(e);
     unlockAudio();
     if (e.button === 0) input.fire = true;
     if (e.button === 2) queueSkill('nova');
   });
   addEventListener('pointermove', trackPointer);
-  addEventListener('mouseup', e => { if (e.button === 0) input.fire = false; });
-  addEventListener('pointercancel', resetInput);
+  addEventListener('mouseup', e => { if (e.button === 0 && touch.aimId === null) input.fire = false; });
+  addEventListener('pointercancel', e => { if (e.pointerType !== 'touch') resetInput(); });
   addEventListener('blur', () => { resetInput(); if (mode === 'play') openPause(); });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { resetInput(); if (mode === 'play') openPause(); }
@@ -2488,7 +2665,7 @@ function updateCamera(dt) {
 function titleCamera(t) {
   const drift = options.shake ? Math.sin(t * .35) * .26 : 0;
   camera.position.set(3.2 + drift, 5.2, 13.4);
-  camera.lookAt(-.35, 2.25, -2.4);
+  camera.lookAt(camera.aspect < 1 ? 4.1 : -.35, 2.25, -2.4);
   camera.updateMatrixWorld();
 }
 function showTitle() {
@@ -2514,6 +2691,7 @@ function showTitle() {
   player.weapon.position.z = .30;
   playerLight.position.set(4.1, 3.1, 3.4);
   buildRoom(0, 1, true);
+  resize();
   titleCamera(rawTime);
   syncCursor();
   showBest();
@@ -2521,8 +2699,10 @@ function showTitle() {
 let renderScale = 1, frameSamples = 0, frameTotal = 0, qualityWait = 0, renderDirty = true;
 function resize() {
   camera.aspect = innerWidth / Math.max(1, innerHeight);
+  const narrow = clamp((.86 - camera.aspect) / .44, 0, 1);
+  camera.fov = dom.hud.hidden ? 44 : 44 + narrow * 26;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(1.5, devicePixelRatio || 1) * renderScale);
+  renderer.setPixelRatio(Math.min(touch.enabled ? 1.25 : 1.5, devicePixelRatio || 1) * renderScale);
   renderer.setSize(innerWidth, innerHeight, false);
   dustPoints.material.uniforms.pixels.value = renderer.domElement.height * .71;
   renderDirty = true;
@@ -2600,7 +2780,6 @@ function boot() {
     setupPools();
     player = makePlayer();
     bindInput();
-    resize();
     addEventListener('resize', resize);
     showTitle();
     requestAnimationFrame(frame);
